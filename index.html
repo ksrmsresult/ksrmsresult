@@ -2223,13 +2223,13 @@
         }
 
         // ----------------------------------------------------------------------
-        // REQUIREMENT 2 & 3: CLASS CATEGORY DETECTOR & ROUTER
+        // REQUIREMENT 2 & 3: CLASS CATEGORY DETECTOR & ROUTER (BUG 3 FIX)
         // ----------------------------------------------------------------------
         function getClassCategory(className) {
             if (!className) return 'PRIMARY';
             const normalized = String(className).trim().toLowerCase();
-            if (normalized.includes('9th') || normalized === '9') return 'CLASS9';
-            if (normalized.includes('10th') || normalized === '10' || normalized.includes('sslc')) return 'CLASS10';
+            if (normalized.includes('9th') || normalized.includes('9') || normalized === 'class 9') return 'CLASS9';
+            if (normalized.includes('10th') || normalized.includes('10') || normalized.includes('sslc') || normalized === 'class 10') return 'CLASS10';
             return 'PRIMARY';
         }
 
@@ -2291,7 +2291,7 @@
 
         // ----------------------------------------------------------------------
         // REQUIREMENT 4, 5, 6: HIGH SCHOOL MARKS DATA STRUCTURES & CALCULATIONS
-        // UPDATE: CLASS 9 HAS MAX MARKS 100 FOR ALL 6 SUBJECTS (TOTAL 600)
+        // BUG 1 FIX: CLASS 9 HAS MAX MARKS 100 FOR ALL 6 SUBJECTS (TOTAL 600)
         // ----------------------------------------------------------------------
         function createBlankHighSchoolSubjectMarks(subjectId) {
             return {
@@ -2328,7 +2328,7 @@
             const isClass10 = (cat === 'CLASS10');
             const isFL = (subId === 's1');
 
-            // UPDATE: Class 10 First Language is out of 125. Class 9 First Language is out of 100 (Total 600).
+            // BUG 1 FIX: Class 10 First Language is out of 125. Class 9 First Language is out of 100 (Total 600).
             const maxMarks = (isFL && isClass10) ? 125 : 100;
             const passMin = (isFL && isClass10) ? 44 : 35;
 
@@ -2523,11 +2523,13 @@
         }
 
         // ----------------------------------------------------------------------
-        // REQUIREMENT 7: TEACHER INDIVIDUAL MARKS REGISTER (CLASS 9 & 10 ONLY)
+        // REQUIREMENT 7: TEACHER INDIVIDUAL MARKS REGISTER (CLASS 9 & 10 ONLY - BUG 3 FIX)
         // ----------------------------------------------------------------------
         function openTeacherIndividualRegister() {
             let selectedClass = document.getElementById('filterClassMarks') ? document.getElementById('filterClassMarks').value : window.ksrmsState.activeClass;
-            if (selectedClass === 'ALL' && document.getElementById('rptClassSelect')) {
+            
+            // Fallback to rptClassSelect if ALL or empty
+            if ((!selectedClass || selectedClass === 'ALL') && document.getElementById('rptClassSelect')) {
                 selectedClass = document.getElementById('rptClassSelect').value;
             }
 
@@ -2535,8 +2537,8 @@
 
             if (cat !== 'CLASS9' && cat !== 'CLASS10') {
                 alert((currentLang === 'kn')
-                    ? "ಈ ರಜಿಸ್ಟರ್ ಕೇವಲ 9 ಮತ್ತು 10 ನೇ ತರಗತಿಗೆ ಮಾತ್ರ ಲಭ್ಯವಿದೆ. ದಯವಿಟ್ಟು 9 ಅಥವಾ 10ನೇ ತರಗತಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ."
-                    : "This register is available only for Class 9 and Class 10. Please select Class 9 or Class 10.");
+                    ? `ಈ ರಜಿಸ್ಟರ್ ಕೇವಲ 9 ಮತ್ತು 10 ನೇ ತರಗತಿಗೆ ಮಾತ್ರ ಲಭ್ಯವಿದೆ. (ಪ್ರಸ್ತುತ ಆಯ್ಕೆ: ${selectedClass})`
+                    : `This register is available only for Class 9 and Class 10. (Selected: ${selectedClass})`);
                 return;
             }
 
@@ -2659,12 +2661,13 @@
         }
 
         // ----------------------------------------------------------------------
-        // REQUIREMENT 8 & 9: CONSOLIDATED RESULT REGISTER (CLASS 9 & 10 ONLY)
-        // UPDATE: CLASS 9 TOTAL MARKS IS 600
+        // REQUIREMENT 8 & 9: CONSOLIDATED RESULT REGISTER (CLASS 9 & 10 ONLY - BUG 1 & BUG 3 FIX)
         // ----------------------------------------------------------------------
         function openConsolidatedResultRegister() {
             let selectedClass = document.getElementById('filterClassMarks') ? document.getElementById('filterClassMarks').value : window.ksrmsState.activeClass;
-            if (selectedClass === 'ALL' && document.getElementById('rptClassSelect')) {
+            
+            // Fallback to rptClassSelect if ALL or empty
+            if ((!selectedClass || selectedClass === 'ALL') && document.getElementById('rptClassSelect')) {
                 selectedClass = document.getElementById('rptClassSelect').value;
             }
 
@@ -2672,8 +2675,8 @@
 
             if (cat !== 'CLASS9' && cat !== 'CLASS10') {
                 alert((currentLang === 'kn')
-                    ? "ಕ್ರೂಢೀಕೃತ ರಜಿಸ್ಟರ್ ಕೇವಲ 9 ಮತ್ತು 10 ನೇ ತರಗತಿಗೆ ಮಾತ್ರ ಲಭ್ಯವಿದೆ. ದಯವಿಟ್ಟು 9 ಅಥವಾ 10ನೇ ತರಗತಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ."
-                    : "Consolidated Register is available only for Class 9 and Class 10. Please select Class 9 or Class 10.");
+                    ? `ಕ್ರೂಢೀಕೃತ ರಜಿಸ್ಟರ್ ಕೇವಲ 9 ಮತ್ತು 10 ನೇ ತರಗತಿಗೆ ಮಾತ್ರ ಲಭ್ಯವಿದೆ. (ಪ್ರಸ್ತುತ ಆಯ್ಕೆ: ${selectedClass})`
+                    : `Consolidated Register is available only for Class 9 and Class 10. (Selected: ${selectedClass})`);
                 return;
             }
 
@@ -2813,7 +2816,7 @@
                 const sub6 = calculateSubjectFinalMarks('s6', s.hsMarks?.s6, className);
 
                 const grandTotalObtained = sub1.grandTotal + sub2.grandTotal + sub3.grandTotal + sub4.grandTotal + sub5.grandTotal + sub6.grandTotal;
-                const maxGrandTotal = 600; // FIX: Class 9 Total is 600
+                const maxGrandTotal = 600; // BUG 1 FIX: Class 9 Total is 600
 
                 const allPassed = sub1.pass && sub2.pass && sub3.pass && sub4.pass && sub5.pass && sub6.pass;
                 const overallPerc = ((grandTotalObtained / maxGrandTotal) * 100).toFixed(1);
@@ -3180,7 +3183,7 @@
         }
 
         // ----------------------------------------------------------------------
-        // REQUIREMENT 1: FIX MARKS ENTRY EXAM SHEET REPORT GENERATOR & PRINT
+        // REQUIREMENT 1: FIX MARKS ENTRY EXAM SHEET REPORT GENERATOR & PRINT (BUG 2 FIX)
         // Shows strictly the selected exam results for the class without
         // breaking tab navigation or pulling unselected exam data.
         // ----------------------------------------------------------------------
@@ -3680,7 +3683,7 @@
             const sub6 = calculateSubjectFinalMarks('s6', st.hsMarks?.s6, st.className);
 
             const grandTotalObtained = sub1.grandTotal + sub2.grandTotal + sub3.grandTotal + sub4.grandTotal + sub5.grandTotal + sub6.grandTotal;
-            const maxGrandTotal = isClass10 ? 625 : 600; // FIX: 10th is 625, 9th is 600
+            const maxGrandTotal = isClass10 ? 625 : 600; // BUG 1 FIX: 10th is 625, 9th is 600
 
             const allPassed = sub1.pass && sub2.pass && sub3.pass && sub4.pass && sub5.pass && sub6.pass;
             const overallPerc = ((grandTotalObtained / maxGrandTotal) * 100).toFixed(1) + '%';
