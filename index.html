@@ -4945,6 +4945,131 @@
             const currentCls = document.getElementById('regClassSelect') ? document.getElementById('regClassSelect').value : "6th Standard";
             handleClassSelectionChange(currentCls);
         });
+
+// ----------------------------------------------------------------------
+        // FIX FOR MARKS ENTRY CURSOR FOCUS LOSS (AUTOMATIC OVERRIDE)
+        // ----------------------------------------------------------------------
+        let cloudSyncTimer = null;
+        function debouncedCloudSync() {
+            clearTimeout(cloudSyncTimer);
+            cloudSyncTimer = setTimeout(() => {
+                syncSchoolDataToCloud();
+            }, 1500);
+        }
+
+        function subscribeToSchoolCloudData(diseCode) {
+            if (!db || !diseCode || diseCode === 'ALL') return;
+            if (firestoreUnsubscribe) firestoreUnsubscribe();
+
+            const docRef = db.collection("ksrms_schools").doc(diseCode);
+            firestoreUnsubscribe = docRef.onSnapshot((doc) => {
+                if (doc.exists) {
+                    if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.classList.contains('mark-input')) {
+                        return; // Typing ಮಾಡುವಾಗ Cursor ಹೊರಬರುವುದನ್ನು ತಡೆಯಲಾಗಿದೆ
+                    }
+                    const cloudData = doc.data();
+                    if (cloudData.students && Array.isArray(cloudData.students)) sampleStudents = cloudData.students;
+                    if (cloudData.appSettings) appSettings = { ...appSettings, ...cloudData.appSettings };
+                    if (cloudData.classTeachersMap) classTeachersMap = cloudData.classTeachersMap;
+                    if (cloudData.subjectMasterList && Array.isArray(cloudData.subjectMasterList)) subjectMasterList = cloudData.subjectMasterList;
+                    onClassChangeHandle();
+                    renderSubjectTable();
+                }
+            }, (err) => console.error("Cloud Listener Error:", err));
+        }
+
+        function updateStudentMarkInlineFast(inputEl, stId, sub, testKey) {
+            if (!checkLicensePermission("enter marks")) {
+                inputEl.value = '';
+                return;
+            }
+
+            const st = sampleStudents.find(s => String(s.id) === String(stId));
+            if (!st) return;
+
+            if (!st.marks[sub]) st.marks[sub] = {};
+            st.marks[sub][testKey] = inputEl.value !== '' ? Number(inputEl.value) : '';
+
+            const calc = calculateSubjectScores(st.marks[sub], st.cwsnStatus === 'Yes-Exempt', st.className);
+            const row = inputEl.closest('tr');
+
+            if (row) {
+                const cFa1 = row.querySelector('.col-cfa1'); if (cFa1) cFa1.innerText = calc.cFA1;
+                const gFa1 = row.querySelector('.col-gfa1'); if (gFa1) gFa1.innerText = calc.gFA1;
+                const cFa2 = row.querySelector('.col-cfa2'); if (cFa2) cFa2.innerText = calc.cFA2;
+                const gFa2 = row.querySelector('.col-gfa2'); if (gFa2) gFa2.innerText = calc.gFA2;
+                const cSa1 = row.querySelector('.col-csa1'); if (cSa1) cSa1.innerText = calc.cSA1;
+                const gSa1 = row.querySelector('.col-gsa1'); if (gSa1) gSa1.innerText = calc.gSA1;
+                const t1Tot = row.querySelector('.col-t1tot'); if (t1Tot) t1Tot.innerText = calc.t1Tot;
+
+                const cFa3 = row.querySelector('.col-cfa3'); if (cFa3) cFa3.innerText = calc.cFA3;
+                const gFa3 = row.querySelector('.col-gfa3'); if (gFa3) gFa3.innerText = calc.gFA3;
+                const cFa4 = row.querySelector('.col-cfa4'); if (cFa4) cFa4.innerText = calc.cFA4;
+                const gFa4 = row.querySelector('.col-gfa4'); if (gFa4) gFa4.innerText = calc.gFA4;
+                const cSa2 = row.querySelector('.col-csa2'); if (cSa2) cSa2.innerText = calc.cSA2;
+                const gSa2 = row.querySelector('.col-gsa2'); if (gSa2) gSa2.innerText = calc.gSA2;
+                const t2Tot = row.querySelector('.col-t2tot'); if (t2Tot) t2Tot.innerText = calc.t2Tot;
+
+                const grandTot = row.querySelector('.col-grandtot'); if (grandTot) grandTot.innerText = `${calc.subjectGrandTot} (${calc.gGrand})`;
+            }
+
+            debouncedCloudSync();
+        }
+
+        function updateHighSchoolMarkInline(inputEl, studentId) {
+            if (!checkLicensePermission("enter high school marks")) {
+                inputEl.value = '';
+                return;
+            }
+
+            const st = sampleStudents.find(s => String(s.id) === String(studentId));
+            if (!st) return;
+
+            const subKey = inputEl.getAttribute('data-sub');
+            const testKey = inputEl.getAttribute('data-test');
+            const fieldKey = inputEl.getAttribute('data-field');
+
+            if (!st.hsMarks) st.hsMarks = {};
+            if (!st.hsMarks[subKey]) st.hsMarks[subKey] = createBlankHighSchoolSubjectMarks(subKey);
+
+            let val = inputEl.value;
+            const maxVal = parseFloat(inputEl.getAttribute('max')) || 100;
+            if (val !== "" && parseFloat(val) > maxVal) {
+                val = maxVal;
+                inputEl.value = maxVal;
+            }
+
+            st.hsMarks[subKey][testKey][fieldKey] = val !== "" ? parseFloat(val) : "";
+
+            const calc = calculateSubjectFinalMarks(subKey, st.hsMarks[subKey], st.className);
+            const row = inputEl.closest('tr');
+
+            if (row) {
+                const fa1Tot = row.querySelector('.col-fa1-tot'); if (fa1Tot) fa1Tot.innerText = calc.fa1Tot;
+                const fa2Tot = row.querySelector('.col-fa2-tot'); if (fa2Tot) fa2Tot.innerText = calc.fa2Tot;
+                const sa1Conv = row.querySelector('.col-sa1-conv'); if (sa1Conv) sa1Conv.innerText = calc.sa1Converted;
+                const fa3Tot = row.querySelector('.col-fa3-tot'); if (fa3Tot) fa3Tot.innerText = calc.fa3Tot;
+                const fa4Tot = row.querySelector('.col-fa4-tot'); if (fa4Tot) fa4Tot.innerText = calc.fa4Tot;
+                const sa2Conv = row.querySelector('.col-sa2-conv'); if (sa2Conv) sa2Conv.innerText = calc.sa2Converted;
+
+                const grandTot = row.querySelector('.col-grand-tot'); if (grandTot) grandTot.innerText = calc.grandTotal;
+
+                const gradeEl = row.querySelector('.col-grade');
+                if (gradeEl) {
+                    gradeEl.innerText = calc.grade;
+                    gradeEl.className = `badge ${calc.pass ? 'bg-success' : 'bg-danger'} col-grade`;
+                }
+
+                const statusEl = row.querySelector('.col-status');
+                if (statusEl) {
+                    statusEl.innerText = calc.pass ? 'Pass' : 'Fail';
+                    statusEl.className = `fw-bold ${calc.pass ? 'text-success' : 'text-danger'} col-status`;
+                }
+            }
+
+            debouncedCloudSync();
+        }
+
     </script>
 </body>
 </html>
