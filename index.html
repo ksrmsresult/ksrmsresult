@@ -348,7 +348,7 @@
             <div id="unregisteredBanner" class="alert alert-warning shadow-sm border-2 border-warning d-flex flex-wrap justify-content-between align-items-center p-3 mb-4">
                 <div>
                     <h6 class="fw-bold mb-1"><i class="fa-solid fa-eye me-2 text-warning"></i> <span data-i18n="banner_title">ಡೆಮೋ ಪ್ರಿಪ್ಯೂರ್ ಮೋಡ್ (Free Public Demo Mode)</span></h6>
-                    <small class="text-dark" data-i18n="banner_desc">ಸಾರ್ವಜನಿಕ ಉಚಿತ ಡೆಮೋ ಮೋಡ್‌ನಲ್ಲಿದ್ದೀರಿ. ನಿಮ್ಮ ಶಾಲೆಯ ನೈಜ ಡೇಟಾವನ್ನು ಬಳಸಲು ಮತ್ತು ಮುದ್ರಿಸಲು ಲಾಗಿನ್ ಆಗಿ ಅಥವಾ Secret Key ಖರೀದಿಸಿ.</small>
+                    <small class="text-dark" data-i18n="banner_desc">ಸಾರ್ವಜನಿಕ ಉಚಿತ ಡೆಮೋ ಮೋಡ್ನಲ್ಲಿದ್ದೀರಿ. ನಿಮ್ಮ ಶಾಲೆಯ ನೈಜ ಡೇಟಾವನ್ನು ಬಳಸಲು ಮತ್ತು ಮುದ್ರಿಸಲು ಲಾಗಿನ್ ಆಗಿ ಅಥವಾ Secret Key ಖರೀದಿಸಿ.</small>
                 </div>
                 <div class="d-flex gap-2 mt-2 mt-md-0">
                     <button class="btn btn-primary fw-bold btn-sm" onclick="openLoginModal()">
@@ -380,7 +380,7 @@
                         <button class="btn btn-success fw-bold" onclick="triggerPromotionProcess()">
                             <i class="fa-solid fa-arrow-up-right-dots me-1"></i> <span data-i18n="btn_promote">ಪ್ರಮೋಟ್ ಮಾಡಿ</span>
                         </button>
-                        <button class="btn btn-outline-danger btn-sm fw-bold ms-2" onclick="purgeAllDataAndReset()" title="ಖಾಲಿ ಫಾರ್ಮ್‌ಗೆ ಡೇಟಾ ಪೂರ್ಣ ಕ್ಲಿಯರ್ ಮಾಡಿ">
+                        <button class="btn btn-outline-danger btn-sm fw-bold ms-2" onclick="purgeAllDataAndReset()" title="ಖಾಲಿ ಫಾರ್ಮ್ಗೆ ಡೇಟಾ ಪೂರ್ಣ ಕ್ಲಿಯರ್ ಮಾಡಿ">
                             <i class="fa-solid fa-trash-can me-1"></i> <span data-i18n="btn_reset_data">Reset Data</span>
                         </button>
                     </div>
@@ -1360,7 +1360,7 @@
 
                     <hr>
 
-                    <h6 class="fw-bold text-primary mb-2">2. ನೋಂದಾಯಿತ ಶಾಲಾ ಲೈಸೆನ್ಸ್‌ಗಳ ಪಟ್ಟಿ (Registered Licenses)</h6>
+                    <h6 class="fw-bold text-primary mb-2">2. ನೋಂದಾಯಿತ ಶಾಲಾ ಲೈಸೆನ್ಸ್ಗಳ ಪಟ್ಟಿ (Registered Licenses)</h6>
                     <div class="table-responsive" style="max-height: 280px;">
                         <table class="table table-bordered table-sm text-center fs-8 align-middle">
                             <thead class="table-dark">
@@ -1870,7 +1870,7 @@
             document.getElementById('genKeyText').innerHTML = `<b>Key Generated:</b> <span class="text-success fs-6 fw-bold">${key}</span>`;
             document.getElementById('genKeyOutputContainer').classList.remove('d-none');
             renderAdminKeysTable();
-            alert(`ಹೊಸ Secret Key ಜನರೇಟ್ ಆಗಿದೆ ಮತ್ತು ಕ್ಲೌಡ್‌ಗೆ ಉಳಿಸಲಾಗಿದೆ:\nKey: ${key}\n\nಈಗ ಯಾವುದೇ ಮೊಬೈಲ್/ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಈ ಶಾಲೆಯವರು ಲಾಗಿನ್ ಆಗಬಹುದು.`);
+            alert(`ಹೊಸ Secret Key ಜನರೇಟ್ ಆಗಿದೆ ಮತ್ತು ಕ್ಲೌಡ್ಗೆ ಉಳಿಸಲಾಗಿದೆ:\nKey: ${key}\n\nಈಗ ಯಾವುದೇ ಮೊಬೈಲ್/ಕಂಪ್ಯೂಟರ್ನಲ್ಲಿ ಈ ಶಾಲೆಯವರು ಲಾಗಿನ್ ಆಗಬಹುದು.`);
         }
 
         function normalizeKeyStr(str) {
@@ -1902,7 +1902,7 @@
             }
 
             if (!foundRecord) {
-                return alert(`DISE Code (${dise}) ಗೆ ಯಾವುದೇ ನೋಂದಾಯಿತ Secret Key ದೊರೆತಿಲ್ಲ.\n\nದಯವಿಟ್ಟು ₹500 ಪಾವತಿಸಿ Secret Key ಪಡೆಯಿರಿ ಅಥವಾ ನೋಂದಾಯಿತ ಮೊಬೈಲ್‌ನಿಂದ ಅಡ್ಮಿನ್ (9902090911) ಸಂಪರ್ಕಿಸಿ.`);
+                return alert(`DISE Code (${dise}) ಗೆ ಯಾವುದೇ ನೋಂದಾಯಿತ Secret Key ದೊರೆತಿಲ್ಲ.\n\nದಯವಿಟ್ಟು ₹500 ಪಾವತಿಸಿ Secret Key ಪಡೆಯಿರಿ ಅಥವಾ ನೋಂದಾಯಿತ ಮೊಬೈಲ್ನಿಂದ ಅಡ್ಮಿನ್ (9902090911) ಸಂಪರ್ಕಿಸಿ.`);
             }
 
             const inputKeyNorm = normalizeKeyStr(rawKey);
@@ -1986,7 +1986,7 @@
 
         function copyRetrievedKey(key, dise) {
             navigator.clipboard.writeText(key);
-            alert(`Secret Key Copied: ${key}\n\nಲಾಗಿನ್ ಫಾರ್ಮ್‌ನಲ್ಲಿ ಈ Key ಭರ್ತಿ ಮಾಡಲಾಗಿದೆ.`);
+            alert(`Secret Key Copied: ${key}\n\nಲಾಗಿನ್ ಫಾರ್ಮ್ನಲ್ಲಿ ಈ Key ಭರ್ತಿ ಮಾಡಲಾಗಿದೆ.`);
             document.getElementById('loginSecretKey').value = key;
             document.getElementById('loginDiseCode').value = dise;
             forgotKeyModalInstance.hide();
@@ -4693,18 +4693,41 @@
             document.querySelectorAll('.st-select-check').forEach(c => c.checked = master.checked);
         }
 
+// ----------------------------------------------------------------------
+        // DYNAMIC CATEGORY NORMALIZER & DASHBOARD CATEGORY STATISTICS FIX
+        // ----------------------------------------------------------------------
+        function getCategoryGroup(catStr) {
+            if (!catStr) return 'OBC';
+            const clean = String(catStr).trim().toUpperCase();
+
+            if (clean.includes('SC') || clean.includes('ಎಸ್ಸಿ') || clean.includes('ಎಸ್.ಸಿ') || clean.includes('SCHEDULED CASTE')) {
+                return 'SC';
+            }
+            if (clean.includes('ST') || clean.includes('ಎಸ್ಟಿ') || clean.includes('ಎಸ್.ಟಿ') || clean.includes('SCHEDULED TRIBE')) {
+                return 'ST';
+            }
+            if (clean.includes('GM') || clean.includes('GENERAL') || clean.includes('GEN') || clean.includes('ಸಾಮಾನ್ಯ') || clean.includes('MERIT')) {
+                return 'GM';
+            }
+            // Cat-1, 2A, 2B, 3A, 3B, Cat-1 / OBC, Others, OBC ಇವೆಲ್ಲವೂ OBC ವರ್ಗಕ್ಕೆ ಸೇರುತ್ತವೆ!
+            return 'OBC';
+        }
+
         function renderDashboardTables() {
             const students = Array.isArray(sampleStudents) ? sampleStudents : [];
+            
+            // ಇಡೀ ಶಾಲೆಯ ಒಟ್ಟು ಮಕ್ಕಳ ಸಂಖ್ಯೆ ಲೆಕ್ಕಾಚಾರ (All Classes)
+            const totalCount = students.length;
             const isBoy = s => s && (s.gender === 'Boy' || s.gender === 'Male' || s.gender === 'ಗಂಡು');
             const isGirl = s => s && (s.gender === 'Girl' || s.gender === 'Female' || s.gender === 'ಹೆಣ್ಣು');
 
-            const totalCount = students.length;
             const totalBoys = students.filter(isBoy).length;
             const totalGirls = students.filter(isGirl).length;
 
             const boysPercStr = totalCount > 0 ? ((totalBoys / totalCount) * 100).toFixed(1) + '%' : '0.0%';
             const girlsPercStr = totalCount > 0 ? ((totalGirls / totalCount) * 100).toFixed(1) + '%' : '0.0%';
 
+            // ಡ್ಯಾಶ್ಬೋರ್ಡ್ ಮೇಲ್ಭಾಗದ ಕಾರ್ಡ್ಗಳ Auto-Update
             const elTot = document.getElementById('dashTotalStudents');
             const elBg = document.getElementById('dashBoysGirlsCount');
             const elBp = document.getElementById('dashBoysPerc');
@@ -4717,11 +4740,12 @@
 
             const activeClasses = getClassesInSelectedRange();
 
+            // 1. ತರಗತಿವಾರು ಸಂಖ್ಯೆ ಟೇಬಲ್ (Classwise Count Table)
             const classBody = document.getElementById('dashClasswiseTableBody');
             if (classBody) {
                 let classHtml = "";
                 activeClasses.forEach(cls => {
-                    const filtered = students.filter(s => s && s.className === cls);
+                    const filtered = students.filter(s => s && String(s.className).trim().toLowerCase() === String(cls).trim().toLowerCase());
                     const m = filtered.filter(isBoy).length;
                     const f = filtered.filter(isGirl).length;
                     const tot = filtered.length;
@@ -4737,10 +4761,10 @@
                 classBody.innerHTML = classHtml;
             }
 
+            // 2. ಪ್ರವರ್ಗವಾರು (Category Statistics) 1st to 10th Standard Auto-Update
             const catBody = document.getElementById('dashCategoryTableBody');
             if (catBody) {
                 let catHtml = "";
-                const obcCatList = ['Cat-1', '2A', '2B', '3A', '3B', 'Cat-1 / OBC', 'OBC'];
 
                 let totScM = 0, totScF = 0;
                 let totStM = 0, totStF = 0;
@@ -4748,22 +4772,22 @@
                 let totObcM = 0, totObcF = 0;
 
                 activeClasses.forEach(cls => {
-                    const filtered = students.filter(s => s && s.className === cls);
+                    const filtered = students.filter(s => s && String(s.className).trim().toLowerCase() === String(cls).trim().toLowerCase());
 
-                    const scM = filtered.filter(s => s.casteCat === 'SC' && isBoy(s)).length;
-                    const scF = filtered.filter(s => s.casteCat === 'SC' && isGirl(s)).length;
+                    const scM = filtered.filter(s => getCategoryGroup(s.casteCat) === 'SC' && isBoy(s)).length;
+                    const scF = filtered.filter(s => getCategoryGroup(s.casteCat) === 'SC' && isGirl(s)).length;
                     const scT = scM + scF;
 
-                    const stM = filtered.filter(s => s.casteCat === 'ST' && isBoy(s)).length;
-                    const stF = filtered.filter(s => s.casteCat === 'ST' && isGirl(s)).length;
+                    const stM = filtered.filter(s => getCategoryGroup(s.casteCat) === 'ST' && isBoy(s)).length;
+                    const stF = filtered.filter(s => getCategoryGroup(s.casteCat) === 'ST' && isGirl(s)).length;
                     const stT = stM + stF;
 
-                    const gmM = filtered.filter(s => (s.casteCat === 'General' || s.casteCat === 'GM') && isBoy(s)).length;
-                    const gmF = filtered.filter(s => (s.casteCat === 'General' || s.casteCat === 'GM') && isGirl(s)).length;
+                    const gmM = filtered.filter(s => getCategoryGroup(s.casteCat) === 'GM' && isBoy(s)).length;
+                    const gmF = filtered.filter(s => getCategoryGroup(s.casteCat) === 'GM' && isGirl(s)).length;
                     const gmT = gmM + gmF;
 
-                    const obcM = filtered.filter(s => obcCatList.includes(s.casteCat) && isBoy(s)).length;
-                    const obcF = filtered.filter(s => obcCatList.includes(s.casteCat) && isGirl(s)).length;
+                    const obcM = filtered.filter(s => getCategoryGroup(s.casteCat) === 'OBC' && isBoy(s)).length;
+                    const obcF = filtered.filter(s => getCategoryGroup(s.casteCat) === 'OBC' && isGirl(s)).length;
                     const obcT = obcM + obcF;
 
                     const grandM = scM + stM + gmM + obcM;
@@ -4807,7 +4831,6 @@
                 catBody.innerHTML = catHtml;
             }
         }
-
         function saveLanguageSelections() {
             if (!checkLicensePermission("save language selections")) return;
             const s1 = document.getElementById('langSelectS1').value;
