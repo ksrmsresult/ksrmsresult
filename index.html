@@ -1188,7 +1188,6 @@
     </div>
 
     <!-- MODALS -->
-
     <!-- LOGIN MODAL -->
     <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -1740,7 +1739,7 @@
             }
         }
 
-        // ADMIN PANEL & LOGIN WITH CLOUD LICENSING
+        // ADMIN PANEL & CLOUD LICENSING
         function deleteSchoolByAdmin(diseCode) {
             if (currentSession.role !== 'admin') {
                 alert("Only Master Admin can delete registered schools!");
@@ -1860,7 +1859,6 @@
             dbKeys.push(licenseObj);
             localStorage.setItem('ksrms_keys_db', JSON.stringify(dbKeys));
 
-            // Save to Firebase Cloud so ANY phone/computer can log in with this key!
             if (db) {
                 try {
                     await db.collection("ksrms_licenses").doc(dise).set(licenseObj);
@@ -1875,15 +1873,18 @@
             alert(`ಹೊಸ Secret Key ಜನರೇಟ್ ಆಗಿದೆ ಮತ್ತು ಕ್ಲೌಡ್‌ಗೆ ಉಳಿಸಲಾಗಿದೆ:\nKey: ${key}\n\nಈಗ ಯಾವುದೇ ಮೊಬೈಲ್/ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಈ ಶಾಲೆಯವರು ಲಾಗಿನ್ ಆಗಬಹುದು.`);
         }
 
+        function normalizeKeyStr(str) {
+            return String(str || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        }
+
         async function performSchoolLogin() {
             const dise = document.getElementById('loginDiseCode').value.trim();
-            const key = document.getElementById('loginSecretKey').value.trim().toUpperCase();
+            const rawKey = document.getElementById('loginSecretKey').value.trim();
 
-            if (!dise || !key) return alert('ದಯವಿಟ್ಟು DISE Code ಮತ್ತು Secret Key ನಮೂದಿಸಿ!');
+            if (!dise || !rawKey) return alert('ದಯವಿಟ್ಟು ಶಾಲೆಯ DISE Code ಮತ್ತು Secret Key ಎರಡನ್ನೂ ನಮೂದಿಸಿ!');
 
             let foundRecord = null;
 
-            // 1. Try Firebase Firestore Cloud License Database First
             if (db) {
                 try {
                     const docSnap = await db.collection("ksrms_licenses").doc(dise).get();
@@ -1895,24 +1896,26 @@
                 }
             }
 
-            // 2. Fallback to Local Storage if Offline/Demo
             if (!foundRecord) {
                 const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
                 foundRecord = dbKeys.find(k => String(k.diseCode).trim() === dise);
             }
 
             if (!foundRecord) {
-                return alert('ಈ DISE Code ಗೆ ಯಾವುದೇ ಸಕ್ರಿಯ Secret Key ದೊರೆತಿಲ್ಲ. ದಯವಿಟ್ಟು ಲೈಸೆನ್ಸ್ ಖರೀದಿಸಿ ಅಥವಾ ಸಕ್ರಿಯಗೊಳಿಸಿ.');
+                return alert(`DISE Code (${dise}) ಗೆ ಯಾವುದೇ ನೋಂದಾಯಿತ Secret Key ದೊರೆತಿಲ್ಲ.\n\nದಯವಿಟ್ಟು ₹500 ಪಾವತಿಸಿ Secret Key ಪಡೆಯಿರಿ ಅಥವಾ ನೋಂದಾಯಿತ ಮೊಬೈಲ್‌ನಿಂದ ಅಡ್ಮಿನ್ (9902090911) ಸಂಪರ್ಕಿಸಿ.`);
             }
 
-            if (String(foundRecord.secretKey).trim().toUpperCase() !== key) {
-                return alert('Secret Key ಸರಿಯಾಗಿಲ್ಲ!');
+            const inputKeyNorm = normalizeKeyStr(rawKey);
+            const storedKeyNorm = normalizeKeyStr(foundRecord.secretKey);
+
+            if (inputKeyNorm !== storedKeyNorm && !storedKeyNorm.endsWith(inputKeyNorm)) {
+                return alert('Secret Key ಸರಿಯಾಗಿಲ್ಲ! ದಯವಿಟ್ಟು ಕಳುಹಿಸಲಾದ Secret Key ಅನ್ನು ಸರಿಯಾಗಿ ನಮೂದಿಸಿ.');
             }
 
-            const expiresAt = foundRecord.expiresAt ? (typeof foundRecord.expiresAt === 'number' ? foundRecord.expiresAt : foundRecord.expiresAt.toMillis()) : Date.now() + 365*24*60*60*1000;
+            const expiresAt = foundRecord.expiresAt ? (typeof foundRecord.expiresAt === 'number' ? foundRecord.expiresAt : (foundRecord.expiresAt.toMillis ? foundRecord.expiresAt.toMillis() : Date.now() + 365*24*60*60*1000)) : Date.now() + 365*24*60*60*1000;
 
             if (Date.now() > expiresAt) {
-                return alert('Secret Key ಅವಧಿ ಮುಗಿದಿದೆ! ದಯವಿಟ್ಟು ₹500 ಪಾವತಿಸಿ ನವೀಕರಿಸಿ.');
+                return alert('ನಿಮ್ಮ ಶಾಲೆಯ Secret Key ಅವಧಿ ಮುಗಿದಿದೆ (Expired)! ದಯವಿಟ್ಟು ₹500 ಪಾವತಿಸಿ ನವೀಕರಿಸಿ.');
             }
 
             currentSession = {
@@ -1932,7 +1935,73 @@
             loginModalInstance.hide();
             updateSessionUI();
             subscribeToSchoolCloudData(foundRecord.diseCode);
-            alert(`ಲಾಗಿನ್ ಯಶಸ್ವಿಯಾಗಿದೆ!\nಶಾಲೆ: ${foundRecord.schoolName}`);
+            alert(`ಲಾಗಿನ್ ಯಶಸ್ವಿಯಾಗಿದೆ!\n\nಶಾಲೆ: ${foundRecord.schoolName}\nDISE: ${foundRecord.diseCode}`);
+        }
+
+        async function retrieveExistingSecretKey() {
+            const dise = document.getElementById('fgDiseCode').value.trim();
+            const mob = document.getElementById('fgMobile').value.trim();
+            const resContainer = document.getElementById('forgotKeyResult');
+
+            if (!dise || !mob) return alert('ದಯವಿಟ್ಟು DISE Code ಮತ್ತು ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಎರಡನ್ನೂ ನಮೂದಿಸಿ!');
+
+            resContainer.innerHTML = `<div class="text-primary fw-bold text-center"><i class="fa-solid fa-spinner fa-spin me-2"></i> Key ಹುಡುಕಲಾಗುತ್ತಿದೆ...</div>`;
+
+            let foundRecord = null;
+
+            if (db) {
+                try {
+                    const docSnap = await db.collection("ksrms_licenses").doc(dise).get();
+                    if (docSnap.exists) foundRecord = docSnap.data();
+                } catch(e) {}
+            }
+
+            if (!foundRecord) {
+                const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+                foundRecord = dbKeys.find(k => String(k.diseCode).trim() === dise);
+            }
+
+            if (!foundRecord) {
+                resContainer.innerHTML = `<div class="alert alert-danger fw-bold text-center mb-0"><i class="fa-solid fa-circle-exclamation me-1"></i> ಈ DISE Code (${dise}) ಗೆ ಯಾವುದೇ ಸಕ್ರಿಯ ಲೈಸೆನ್ಸ್ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿಲ್ಲ.</div>`;
+                return;
+            }
+
+            const regMob = String(foundRecord.mobile || '').replace(/\D/g, '');
+            const inputMob = mob.replace(/\D/g, '');
+
+            if (regMob && inputMob && regMob !== inputMob) {
+                resContainer.innerHTML = `<div class="alert alert-warning fw-bold text-center mb-0"><i class="fa-solid fa-triangle-exclamation me-1"></i> ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ತಾಳೆಯಾಗುತ್ತಿಲ್ಲ. ಸಹಾಯಕ್ಕಾಗಿ Admin (9902090911) ಸಂಪರ್ಕಿಸಿ.</div>`;
+                return;
+            }
+
+            resContainer.innerHTML = `
+                <div class="alert alert-success border border-success p-3 text-center mb-0">
+                    <div class="fw-bold text-dark mb-1">ಶಾಲೆ: ${foundRecord.schoolName}</div>
+                    <div class="fs-6 fw-bold text-danger my-2">Secret Key: <span class="text-decoration-underline">${foundRecord.secretKey}</span></div>
+                    <button class="btn btn-sm btn-dark fw-bold mt-1" onclick="copyRetrievedKey('${foundRecord.secretKey}', '${foundRecord.diseCode}')">
+                        <i class="fa-solid fa-copy me-1"></i> Key Copy ಮಾಡಿ &amp; Login ಆಗಿ
+                    </button>
+                </div>`;
+        }
+
+        function copyRetrievedKey(key, dise) {
+            navigator.clipboard.writeText(key);
+            alert(`Secret Key Copied: ${key}\n\nಲಾಗಿನ್ ಫಾರ್ಮ್‌ನಲ್ಲಿ ಈ Key ಭರ್ತಿ ಮಾಡಲಾಗಿದೆ.`);
+            document.getElementById('loginSecretKey').value = key;
+            document.getElementById('loginDiseCode').value = dise;
+            forgotKeyModalInstance.hide();
+            loginModalInstance.show();
+        }
+
+        function processPurchaseWhatsAppTrigger() {
+            const sName = document.getElementById('purSchoolName').value.trim();
+            const dise = document.getElementById('purDiseCode').value.trim();
+            const mob = document.getElementById('purMobile').value.trim();
+
+            if (!sName || !dise || !mob) return alert('ದಯವಿಟ್ಟು ಎಲ್ಲಾ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ!');
+
+            const msg = `ನಮಸ್ಕಾರ, KSRMS V3.2 Secret Key ಖರೀದಿ ವಿವರಗಳು:\n\n- ಶಾಲೆಯ ಹೆಸರು: ${sName}\n- DISE Code: ${dise}\n- ಮೊಬೈಲ್: ${mob}\n- ಪಾವತಿ: ₹500 (1 Year License)\n\nದಯವಿಟ್ಟು ಸಕ್ರಿಯ Secret Key ಕಳುಹಿಸಿಕೊಡಿ.`;
+            window.open(`https://api.whatsapp.com/send?phone=919902090911&text=${encodeURIComponent(msg)}`, '_blank');
         }
 
         function performAdminLogin() {
@@ -4856,6 +4925,5 @@
     </script>
 </body>
 </html>
-
 
 
