@@ -571,8 +571,7 @@
                 </div>
             </div>
         </section>
-
-        <!-- 2. STUDENT DATABASE MODULE -->
+<!-- 2. STUDENT DATABASE MODULE -->
         <section id="studentSection" class="content-section d-none">
             <div class="card border-primary shadow-sm mb-4">
                 <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -732,7 +731,8 @@
                 </div>
             </div>
         </section>
-<!-- 3. SUBJECT MASTER MODULE -->
+
+        <!-- 3. SUBJECT MASTER MODULE -->
         <section id="subjectSection" class="content-section d-none">
             <!-- TOP TABS FOR SUBJECT MASTER -->
             <ul class="nav nav-tabs mb-3 fw-bold" id="subjectMasterTabs" role="tablist">
@@ -896,8 +896,7 @@
                 </div>
             </div>
         </section>
-
-        <!-- 4. MARKS ENTRY & ATTENDANCE MODULE -->
+<!-- 4. MARKS ENTRY & ATTENDANCE MODULE -->
         <section id="marksSection" class="content-section d-none">
             <div class="card border-primary shadow-sm mb-3">
                 <div class="card-header bg-primary text-white fw-bold d-flex flex-wrap justify-content-between align-items-center">
@@ -1260,9 +1259,9 @@
                 </div>
             </div>
         </section>
-    </div>
 
     <!-- MODALS -->
+
     <!-- LOGIN MODAL -->
     <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -1714,7 +1713,6 @@
             const docRef = db.collection("ksrms_schools").doc(diseCode);
             firestoreUnsubscribe = docRef.onSnapshot((doc) => {
                 if (doc.exists) {
-                    // Prevent cursor focus loss while user is actively typing in marks input!
                     if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.classList.contains('mark-input')) {
                         return;
                     }
@@ -1818,7 +1816,6 @@
             }
         }
 
-        // ADMIN PANEL & CLOUD LICENSING
         function deleteSchoolByAdmin(diseCode) {
             if (currentSession.role !== 'admin') {
                 alert("Only Master Admin can delete registered schools!");
@@ -3194,8 +3191,12 @@
             }
         }
 
-        // EXAM SHEET PRINT RENDERER (SINGLE SUBJECT = PORTRAIT, ALL SUBJECTS = LANDSCAPE)
-        let examReportMode = 'ALL_SUBJECTS';
+
+
+        // ----------------------------------------------------------------------
+        // DYNAMIC ORIENTATION: SINGLE SUBJECT = PORTRAIT, ALL SUBJECTS = LANDSCAPE
+        // ----------------------------------------------------------------------
+        let examReportMode = 'ALL_SUBJECTS'; // 'ALL_SUBJECTS' or 'SINGLE_SUBJECT'
 
         function setExamReportMode(mode) {
             examReportMode = mode;
@@ -3220,6 +3221,7 @@
 
             const cat = getClassCategory(selectedClass);
 
+            // High school mode (9th / 10th)
             if (cat === 'CLASS9' || cat === 'CLASS10') {
                 const subKey = document.getElementById('selectedSubjectSelect') ? document.getElementById('selectedSubjectSelect').value : 's1';
                 renderTeacherIndividualRegisterHTML(selectedClass, subKey);
@@ -3229,6 +3231,7 @@
                 return;
             }
 
+            // Primary mode (1st to 8th)
             const filtered = selectedClass === 'ALL' ? sampleStudents : sampleStudents.filter(s => s.className === selectedClass);
             const ctName = getCurrentClassTeacherName(selectedClass, 'A');
             const isLowerClass = selectedClass !== 'ALL' && (selectedClass.startsWith('1st') || selectedClass.startsWith('2nd') || selectedClass.startsWith('3rd') || selectedClass.startsWith('4th') || selectedClass.startsWith('5th'));
@@ -3306,7 +3309,7 @@
                     else if (examFilter === 'FA4') rawVal = (m.fa4 !== undefined && m.fa4 !== '') ? Number(m.fa4) : null;
                     else if (examFilter === 'SA2') rawVal = (m.sa2 !== undefined && m.sa2 !== '') ? Number(m.sa2) : null;
                     else if (examFilter === 'TERM2') rawVal = calc.hasMarks ? calc.t2Tot : null;
-                    else rawVal = calc.hasMarks ? calc.subjectGrandTot;
+                    else rawVal = calc.hasMarks ? calc.subjectGrandTot : null;
 
                     const scoreDisp = rawVal !== null ? rawVal : '-';
                     const gradeDisp = rawVal !== null ? getGradeFromScore(rawVal, maxPerSub, true) : '-';
@@ -3376,7 +3379,7 @@
                         else if (examFilter === 'FA4') rawVal = (m.fa4 !== undefined && m.fa4 !== '') ? Number(m.fa4) : null;
                         else if (examFilter === 'SA2') rawVal = (m.sa2 !== undefined && m.sa2 !== '') ? Number(m.sa2) : null;
                         else if (examFilter === 'TERM2') rawVal = calc.hasMarks ? calc.t2Tot : null;
-                        else rawVal = calc.hasMarks ? calc.subjectGrandTot;
+                        else rawVal = calc.hasMarks ? calc.subjectGrandTot : null;
 
                         if (rawVal !== null) {
                             studentTotalScore += rawVal;
