@@ -5113,6 +5113,83 @@
             const currentCls = document.getElementById('regClassSelect') ? document.getElementById('regClassSelect').value : "6th Standard";
             handleClassSelectionChange(currentCls);
         });
+// ----------------------------------------------------------------------
+        // FORCE AUTOMATIC A4 LANDSCAPE PRINT ORIENTATION FOR ALL RESULT SHEETS
+        // ----------------------------------------------------------------------
+        (function injectLandscapePrintStyles() {
+            const printCss = document.createElement('style');
+            printCss.id = "overridePrintOrientationCss";
+            printCss.innerHTML = `
+                @media print {
+                    @page {
+                        size: A4 landscape !important; /* ರಿಸಲ್ಟ್ ಶೀಟ್ಗಳಿಗೆ Landscape ಕಡ್ಡಾಯ */
+                        margin: 4mm 5mm 4mm 5mm !important;
+                    }
+                    body.force-portrait-mode {
+                        /* ಪ್ರಗತಿ ಪತ್ರಕ್ಕೆ ಮಾತ್ರ Portrait */
+                    }
+                }
+            `;
+            document.head.appendChild(printCss);
+        })();
+
+        function applyLandscapeMode() {
+            const styleEl = document.getElementById('dynamicPageStyle');
+            if (styleEl) styleEl.innerHTML = `@page { size: A4 landscape !important; margin: 4mm 5mm !important; }`;
+            document.body.classList.remove('force-portrait-mode');
+            document.body.classList.add('force-landscape-mode');
+        }
+
+        function applyPortraitMode() {
+            const styleEl = document.getElementById('dynamicPageStyle');
+            if (styleEl) styleEl.innerHTML = `@page { size: A4 portrait !important; margin: 4mm 5mm !important; }`;
+            document.body.classList.remove('force-landscape-mode');
+            document.body.classList.add('force-portrait-mode');
+        }
+
+        // 1. Result Sheets / Broadsheets -> FORCE LANDSCAPE
+        const _origExamPrint = renderExamSheetReportAndPrint;
+        renderExamSheetReportAndPrint = function() {
+            applyLandscapeMode();
+            if (typeof _origExamPrint === 'function') _origExamPrint();
+            applyLandscapeMode();
+        };
+
+        const _orig100Print = renderCumulative100Broadsheet;
+        renderCumulative100Broadsheet = function() {
+            applyLandscapeMode();
+            if (typeof _orig100Print === 'function') _orig100Print();
+            applyLandscapeMode();
+        };
+
+        const _origSemesterPrint = renderDetailedSemesterBroadsheet;
+        renderDetailedSemesterBroadsheet = function() {
+            applyLandscapeMode();
+            if (typeof _origSemesterPrint === 'function') _origSemesterPrint();
+            applyLandscapeMode();
+        };
+
+        const _origSchoolAbstract = renderSchoolAbstractReport;
+        renderSchoolAbstractReport = function() {
+            applyLandscapeMode();
+            if (typeof _origSchoolAbstract === 'function') _origSchoolAbstract();
+            applyLandscapeMode();
+        };
+
+        const _origClassGradeAbstract = renderClassGradeAbstractReport;
+        renderClassGradeAbstractReport = function() {
+            applyLandscapeMode();
+            if (typeof _origClassGradeAbstract === 'function') _origClassGradeAbstract();
+            applyLandscapeMode();
+        };
+
+        // 2. Individual Progress Card -> FORCE PORTRAIT
+        const _origProgressCard = renderIndividualReport;
+        renderIndividualReport = function() {
+            applyPortraitMode();
+            if (typeof _origProgressCard === 'function') _origProgressCard();
+            applyPortraitMode();
+        };
     </script>
 </body>
 </html>
