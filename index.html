@@ -1501,7 +1501,7 @@
 
     <!-- CORE JAVASCRIPT ENGINE -->
     <script>
-// ----------------------------------------------------------------------
+        // ----------------------------------------------------------------------
         // SYSTEM CONSTANTS & GLOBAL STATE
         // ----------------------------------------------------------------------
         const ALL_CLASSES_LIST = [
@@ -3194,10 +3194,8 @@
             }
         }
 
-        // ----------------------------------------------------------------------
-        // DYNAMIC ORIENTATION: SINGLE SUBJECT = PORTRAIT, ALL SUBJECTS = LANDSCAPE
-        // ----------------------------------------------------------------------
-        let examReportMode = 'ALL_SUBJECTS'; // 'ALL_SUBJECTS' or 'SINGLE_SUBJECT'
+        // EXAM SHEET PRINT RENDERER (SINGLE SUBJECT = PORTRAIT, ALL SUBJECTS = LANDSCAPE)
+        let examReportMode = 'ALL_SUBJECTS';
 
         function setExamReportMode(mode) {
             examReportMode = mode;
@@ -3222,7 +3220,6 @@
 
             const cat = getClassCategory(selectedClass);
 
-            // High school mode (9th / 10th)
             if (cat === 'CLASS9' || cat === 'CLASS10') {
                 const subKey = document.getElementById('selectedSubjectSelect') ? document.getElementById('selectedSubjectSelect').value : 's1';
                 renderTeacherIndividualRegisterHTML(selectedClass, subKey);
@@ -3232,7 +3229,6 @@
                 return;
             }
 
-            // Primary mode (1st to 8th)
             const filtered = selectedClass === 'ALL' ? sampleStudents : sampleStudents.filter(s => s.className === selectedClass);
             const ctName = getCurrentClassTeacherName(selectedClass, 'A');
             const isLowerClass = selectedClass !== 'ALL' && (selectedClass.startsWith('1st') || selectedClass.startsWith('2nd') || selectedClass.startsWith('3rd') || selectedClass.startsWith('4th') || selectedClass.startsWith('5th'));
@@ -3310,7 +3306,7 @@
                     else if (examFilter === 'FA4') rawVal = (m.fa4 !== undefined && m.fa4 !== '') ? Number(m.fa4) : null;
                     else if (examFilter === 'SA2') rawVal = (m.sa2 !== undefined && m.sa2 !== '') ? Number(m.sa2) : null;
                     else if (examFilter === 'TERM2') rawVal = calc.hasMarks ? calc.t2Tot : null;
-                    else rawVal = calc.hasMarks ? calc.subjectGrandTot : null;
+                    else rawVal = calc.hasMarks ? calc.subjectGrandTot;
 
                     const scoreDisp = rawVal !== null ? rawVal : '-';
                     const gradeDisp = rawVal !== null ? getGradeFromScore(rawVal, maxPerSub, true) : '-';
