@@ -5190,6 +5190,63 @@
             if (typeof _origProgressCard === 'function') _origProgressCard();
             applyPortraitMode();
         };
+
+// ----------------------------------------------------------------------
+        // SECURE FORGOT KEY SYSTEM (MASKED KEY + WHATSAPP ADMIN APPROVAL)
+        // ----------------------------------------------------------------------
+        async function retrieveExistingSecretKey() {
+            const dise = document.getElementById('fgDiseCode').value.trim();
+            const mob = document.getElementById('fgMobile').value.trim();
+            const resContainer = document.getElementById('forgotKeyResult');
+
+            if (!dise || !mob) return alert('ದಯವಿಟ್ಟು DISE Code ಮತ್ತು ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಎರಡನ್ನೂ ನಮೂದಿಸಿ!');
+
+            resContainer.innerHTML = `<div class="text-primary fw-bold text-center"><i class="fa-solid fa-spinner fa-spin me-2"></i> ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...</div>`;
+
+            let foundRecord = null;
+
+            if (db) {
+                try {
+                    const docSnap = await db.collection("ksrms_licenses").doc(dise).get();
+                    if (docSnap.exists) foundRecord = docSnap.data();
+                } catch(e) {}
+            }
+
+            if (!foundRecord) {
+                const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+                foundRecord = dbKeys.find(k => String(k.diseCode).trim() === dise);
+            }
+
+            if (!foundRecord) {
+                resContainer.innerHTML = `<div class="alert alert-danger fw-bold text-center mb-0"><i class="fa-solid fa-circle-exclamation me-1"></i> ಈ DISE Code (${dise}) ಗೆ ಯಾವುದೇ ಸಕ್ರಿಯ ಲೈಸೆನ್ಸ್ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿಲ್ಲ.</div>`;
+                return;
+            }
+
+            const regMob = String(foundRecord.mobile || '').replace(/\D/g, '');
+            const inputMob = mob.replace(/\D/g, '');
+
+            if (regMob && inputMob && regMob !== inputMob) {
+                resContainer.innerHTML = `<div class="alert alert-warning fw-bold text-center mb-0"><i class="fa-solid fa-triangle-exclamation me-1"></i> ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ತಾಳೆಯಾಗುತ್ತಿಲ್ಲ. ಸಹಾಯಕ್ಕಾಗಿ Admin (9902090911) ಸಂಪರ್ಕಿಸಿ.</div>`;
+                return;
+            }
+
+            // Mask the key for security (e.g. KSRMS-****-9011)
+            const rawKey = foundRecord.secretKey || '';
+            const keyParts = rawKey.split('-');
+            const maskedKey = keyParts.length >= 3 ? `${keyParts[0]}-****-${keyParts[keyParts.length-1]}` : `KSRMS-****-${rawKey.slice(-4)}`;
+
+            const waMsg = `ನಮಸ್ಕಾರ KSRMS Admin,\n\nನನ್ನ ಶಾಲೆಯ Secret Key ಮರೆತುಹೋಗಿದೆ. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ ಕಳುಹಿಸಿಕೊಡಿ:\n\n- ಶಾಲೆಯ ಹೆಸರು: ${foundRecord.schoolName}\n- DISE Code: ${dise}\n- ನೋಂದಾಯಿತ ಮೊಬೈಲ್: ${mob}`;
+
+            resContainer.innerHTML = `
+                <div class="alert alert-info border border-info p-3 text-center mb-0">
+                    <div class="fw-bold text-dark mb-1"><i class="fa-solid fa-shield-halved text-success me-1"></i> ಶಾಲೆ ದೃಢೀಕರಿಸಲ್ಪಟ್ಟಿದೆ: ${foundRecord.schoolName}</div>
+                    <div class="fs-6 fw-bold text-danger my-2">Secret Key: <span class="bg-warning px-2 py-1 rounded text-dark">${maskedKey}</span></div>
+                    <small class="d-block text-muted mb-2">ಮಾಹಿತಿ ಸೋರಿಕೆ ತಡೆಯಲು ಪೂರ್ಣ Secret Key ಅನ್ನು ಸ್ಕ್ರೀನ್ ಮೇಲೆ ತೋರಿಸಲಾಗುವುದಿಲ್ಲ. ಕೆಳಗಿನ ಬಟನ್ ಕ್ಲಿಕ್ ಮಾಡಿ Admin ರಿಂದ ಪಡೆದುಕೊಳ್ಳಿ.</small>
+                    <a href="https://api.whatsapp.com/send?phone=919902090911&text=${encodeURIComponent(waMsg)}" target="_blank" class="btn btn-sm btn-success fw-bold mt-1">
+                        <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp ಮೂಲಕ Admin ನಿಂದ Key ಪಡೆಯಿರಿ
+                    </a>
+                </div>`;
+        }
     </script>
 </body>
 </html>
