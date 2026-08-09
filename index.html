@@ -1740,7 +1740,7 @@
             }
         }
 
-        // ADMIN PANEL & LOGIN
+        // ADMIN PANEL & LOGIN WITH CLOUD LICENSING
         function deleteSchoolByAdmin(diseCode) {
             if (currentSession.role !== 'admin') {
                 alert("Only Master Admin can delete registered schools!");
@@ -1764,9 +1764,8 @@
                 localStorage.setItem('ksrms_keys_db', JSON.stringify(updatedKeys));
 
                 if (db) {
-                    db.collection("ksrms_schools").doc(diseCode).delete().then(() => {
-                        console.log(`Cloud document for school DISE ${diseCode} permanently deleted.`);
-                    }).catch(err => console.error("Cloud document delete error:", err));
+                    db.collection("ksrms_licenses").doc(diseCode).delete();
+                    db.collection("ksrms_schools").doc(diseCode).delete();
                 }
 
                 if (currentSession.diseCode === diseCode) {
@@ -1795,6 +1794,11 @@
             if (confirm(`Are you sure you want to change the registered mobile number for "${found.schoolName}" to ${cleanMob}?`)) {
                 found.mobile = cleanMob;
                 localStorage.setItem('ksrms_keys_db', JSON.stringify(dbKeys));
+                
+                if (db) {
+                    db.collection("ksrms_licenses").doc(diseCode).update({ mobile: cleanMob });
+                }
+
                 renderAdminKeysTable();
                 if (currentSession.diseCode === diseCode) {
                     currentSession.mobile = cleanMob;
@@ -1833,7 +1837,7 @@
                 </tr>`).join('');
         }
 
-        function generateSecretKeyForSchool() {
+        async function generateSecretKeyForSchool() {
             const sName = document.getElementById('admGenSchoolName').value.trim();
             const dise = document.getElementById('admGenDiseCode').value.trim();
             const mob = document.getElementById('admGenMobile').value.trim();
@@ -1841,45 +1845,94 @@
             if (!sName || !dise || !mob) return alert('ಎಲ್ಲಾ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ!');
             if (!/^\d{11}$/.test(dise)) return alert('ಅಮಾನ್ಯ DISE Code! 11 ಅಂಕೆಗಳು ಕಡ್ಡಾಯ.');
 
-            const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
             const key = `KSRMS-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
-            dbKeys.push({
-                diseCode: dise, schoolName: sName, mobile: mob, secretKey: key,
-                activatedAt: Date.now(), expiresAt: Date.now() + (365 * 24 * 60 * 60 * 1000), status: 'ACTIVE'
-            });
+            const licenseObj = {
+                diseCode: dise,
+                schoolName: sName,
+                mobile: mob,
+                secretKey: key,
+                activatedAt: Date.now(),
+                expiresAt: Date.now() + (365 * 24 * 60 * 60 * 1000),
+                status: 'ACTIVE'
+            };
 
+            const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+            dbKeys.push(licenseObj);
             localStorage.setItem('ksrms_keys_db', JSON.stringify(dbKeys));
+
+            // Save to Firebase Cloud so ANY phone/computer can log in with this key!
+            if (db) {
+                try {
+                    await db.collection("ksrms_licenses").doc(dise).set(licenseObj);
+                } catch(e) {
+                    console.error("Cloud license save error:", e);
+                }
+            }
+
             document.getElementById('genKeyText').innerHTML = `<b>Key Generated:</b> <span class="text-success fs-6 fw-bold">${key}</span>`;
             document.getElementById('genKeyOutputContainer').classList.remove('d-none');
             renderAdminKeysTable();
-            alert(`ಹೊಸ Secret Key ಜನರೇಟ್ ಆಗಿದೆ: ${key}`);
+            alert(`ಹೊಸ Secret Key ಜನರೇಟ್ ಆಗಿದೆ ಮತ್ತು ಕ್ಲೌಡ್‌ಗೆ ಉಳಿಸಲಾಗಿದೆ:\nKey: ${key}\n\nಈಗ ಯಾವುದೇ ಮೊಬೈಲ್/ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಈ ಶಾಲೆಯವರು ಲಾಗಿನ್ ಆಗಬಹುದು.`);
         }
 
-        function performSchoolLogin() {
+        async function performSchoolLogin() {
             const dise = document.getElementById('loginDiseCode').value.trim();
             const key = document.getElementById('loginSecretKey').value.trim().toUpperCase();
 
             if (!dise || !key) return alert('ದಯವಿಟ್ಟು DISE Code ಮತ್ತು Secret Key ನಮೂದಿಸಿ!');
 
-            const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
-            const foundByDise = dbKeys.find(k => String(k.diseCode).trim() === dise);
+            let foundRecord = null;
 
-            if (!foundByDise) return alert('ಈ DISE Code ಗೆ ಯಾವುದೇ ಸಕ್ರಿಯ Secret Key ದೊರೆತಿಲ್ಲ. ದಯವಿಟ್ಟು ಲೈಸೆನ್ಸ್ ಖರೀದಿಸಿ.');
-            if (String(foundByDise.secretKey).trim().toUpperCase() !== key) return alert('Secret Key ಸರಿಯಾಗಿಲ್ಲ!');
-            if (Date.now() > foundByDise.expiresAt) return alert('Secret Key ಅವಧಿ ಮುಗಿದಿದೆ! ದಯವಿಟ್ಟು ₹500 ಪಾವತಿಸಿ ನವೀಕರಿಸಿ.');
+            // 1. Try Firebase Firestore Cloud License Database First
+            if (db) {
+                try {
+                    const docSnap = await db.collection("ksrms_licenses").doc(dise).get();
+                    if (docSnap.exists) {
+                        foundRecord = docSnap.data();
+                    }
+                } catch(err) {
+                    console.warn("Cloud license check fallback to local:", err);
+                }
+            }
 
-            currentSession = { isLoggedIn: true, role: 'school', diseCode: foundByDise.diseCode, schoolName: foundByDise.schoolName, mobile: foundByDise.mobile };
+            // 2. Fallback to Local Storage if Offline/Demo
+            if (!foundRecord) {
+                const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+                foundRecord = dbKeys.find(k => String(k.diseCode).trim() === dise);
+            }
+
+            if (!foundRecord) {
+                return alert('ಈ DISE Code ಗೆ ಯಾವುದೇ ಸಕ್ರಿಯ Secret Key ದೊರೆತಿಲ್ಲ. ದಯವಿಟ್ಟು ಲೈಸೆನ್ಸ್ ಖರೀದಿಸಿ ಅಥವಾ ಸಕ್ರಿಯಗೊಳಿಸಿ.');
+            }
+
+            if (String(foundRecord.secretKey).trim().toUpperCase() !== key) {
+                return alert('Secret Key ಸರಿಯಾಗಿಲ್ಲ!');
+            }
+
+            const expiresAt = foundRecord.expiresAt ? (typeof foundRecord.expiresAt === 'number' ? foundRecord.expiresAt : foundRecord.expiresAt.toMillis()) : Date.now() + 365*24*60*60*1000;
+
+            if (Date.now() > expiresAt) {
+                return alert('Secret Key ಅವಧಿ ಮುಗಿದಿದೆ! ದಯವಿಟ್ಟು ₹500 ಪಾವತಿಸಿ ನವೀಕರಿಸಿ.');
+            }
+
+            currentSession = {
+                isLoggedIn: true,
+                role: 'school',
+                diseCode: foundRecord.diseCode,
+                schoolName: foundRecord.schoolName,
+                mobile: foundRecord.mobile
+            };
             saveCurrentSession();
 
-            appSettings.diseCode = foundByDise.diseCode;
-            appSettings.schoolName = foundByDise.schoolName;
-            document.getElementById('cfgDiseCode').value = foundByDise.diseCode;
-            document.getElementById('cfgSchoolName').value = foundByDise.schoolName;
+            appSettings.diseCode = foundRecord.diseCode;
+            appSettings.schoolName = foundRecord.schoolName;
+            document.getElementById('cfgDiseCode').value = foundRecord.diseCode;
+            document.getElementById('cfgSchoolName').value = foundRecord.schoolName;
 
             loginModalInstance.hide();
             updateSessionUI();
-            subscribeToSchoolCloudData(foundByDise.diseCode);
-            alert(`ಲಾಗಿನ್ ಯಶಸ್ವಿಯಾಗಿದೆ! ಶಾಲೆ: ${foundByDise.schoolName}`);
+            subscribeToSchoolCloudData(foundRecord.diseCode);
+            alert(`ಲಾಗಿನ್ ಯಶಸ್ವಿಯಾಗಿದೆ!\nಶಾಲೆ: ${foundRecord.schoolName}`);
         }
 
         function performAdminLogin() {
@@ -3158,9 +3211,7 @@
             if (container) container.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // ----------------------------------------------------------------------
         // EXPORT & PRINT UTILITIES
-        // ----------------------------------------------------------------------
         function exportCurrentReportToPdf() {
             if (!checkLicensePermission("export PDF report")) return;
 
@@ -3387,9 +3438,7 @@
             window.print(); 
         }
 
-        // ----------------------------------------------------------------------
         // REPORTS ROUTER & INDIVIDUAL PROGRESS CARDS
-        // ----------------------------------------------------------------------
         function onReportClassChange() {
             const selectedClass = getActiveReportClass();
             updateHighSchoolButtonsVisibility(selectedClass);
@@ -4541,14 +4590,12 @@
             const tbody = document.getElementById('studentTableBody');
             
             const filtered = sampleStudents.filter(s => s.className === selectedClass);
-            const boysCount = filtered.filter(s => s.gender === 'Boy').length;
-            const girlsCount = filtered.filter(s => s.gender === 'Girl').length;
 
-            document.getElementById('stCountBadge').innerText = `${filtered.length} Students`;
-            document.getElementById('dashTotalStudents').innerText = sampleStudents.length;
-            document.getElementById('dashBoysGirlsCount').innerText = `${boysCount} / ${girlsCount}`;
-            document.getElementById('dashBoysPerc').innerText = filtered.length ? ((boysCount/filtered.length)*100).toFixed(1) + '%' : '0%';
-            document.getElementById('dashGirlsPerc').innerText = filtered.length ? ((girlsCount/filtered.length)*100).toFixed(1) + '%' : '0%';
+            const stBadge = document.getElementById('stCountBadge');
+            if (stBadge) stBadge.innerText = `${filtered.length} Students`;
+
+            // Auto-update full school Dashboard statistics
+            renderDashboardTables();
 
             tbody.innerHTML = filtered.map((s, idx) => `
                 <tr>
@@ -4579,8 +4626,25 @@
 
         function renderDashboardTables() {
             const students = Array.isArray(sampleStudents) ? sampleStudents : [];
-            const isBoy = s => s && (s.gender === 'Boy' || s.gender === 'Male');
-            const isGirl = s => s && (s.gender === 'Girl' || s.gender === 'Female');
+            const isBoy = s => s && (s.gender === 'Boy' || s.gender === 'Male' || s.gender === 'ಗಂಡು');
+            const isGirl = s => s && (s.gender === 'Girl' || s.gender === 'Female' || s.gender === 'ಹೆಣ್ಣು');
+
+            const totalCount = students.length;
+            const totalBoys = students.filter(isBoy).length;
+            const totalGirls = students.filter(isGirl).length;
+
+            const boysPercStr = totalCount > 0 ? ((totalBoys / totalCount) * 100).toFixed(1) + '%' : '0.0%';
+            const girlsPercStr = totalCount > 0 ? ((totalGirls / totalCount) * 100).toFixed(1) + '%' : '0.0%';
+
+            const elTot = document.getElementById('dashTotalStudents');
+            const elBg = document.getElementById('dashBoysGirlsCount');
+            const elBp = document.getElementById('dashBoysPerc');
+            const elGp = document.getElementById('dashGirlsPerc');
+
+            if (elTot) elTot.innerText = totalCount;
+            if (elBg) elBg.innerText = `${totalBoys} / ${totalGirls}`;
+            if (elBp) elBp.innerText = boysPercStr;
+            if (elGp) elGp.innerText = girlsPercStr;
 
             const activeClasses = getClassesInSelectedRange();
 
@@ -4770,9 +4834,7 @@
                 </tr>`).join('');
         }
 
-        // ----------------------------------------------------------------------
         // SYSTEM INITIALIZATION
-        // ----------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', () => {
             loginModalInstance = new bootstrap.Modal(document.getElementById('loginModal'));
             purchaseModalInstance = new bootstrap.Modal(document.getElementById('purchaseModal'));
@@ -4794,3 +4856,6 @@
     </script>
 </body>
 </html>
+
+
+
