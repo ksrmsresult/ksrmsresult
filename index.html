@@ -5790,6 +5790,54 @@
                 applyPortraitMode();
             };
         }
+
+        // ----------------------------------------------------------------------
+        // MOBILE MASTER ADMIN QUICK-ACCESS BUTTON (ALWAYS VISIBLE ON MOBILE)
+        // ----------------------------------------------------------------------
+        (function enableMobileAdminAccess() {
+            function injectMobileAdminBtns() {
+                // 1. Mobile top bar Admin Gear Button next to Toggler
+                const navContainer = document.querySelector('nav .container-fluid');
+                const togglerBtn = document.querySelector('.navbar-toggler');
+                if (navContainer && togglerBtn && !document.getElementById('mobileTopAdminBtn')) {
+                    const topAdminBtn = document.createElement('button');
+                    topAdminBtn.id = 'mobileTopAdminBtn';
+                    topAdminBtn.className = 'btn btn-outline-warning btn-sm fw-bold d-xl-none ms-auto me-2 no-print shadow-sm';
+                    topAdminBtn.title = 'Master Admin Panel';
+                    topAdminBtn.onclick = function(e) {
+                        e.preventDefault();
+                        triggerAdminPanelAccess();
+                    };
+                    topAdminBtn.innerHTML = `<i class="fa-solid fa-user-gear me-1"></i> Admin`;
+                    
+                    navContainer.insertBefore(topAdminBtn, togglerBtn);
+                }
+
+                // 2. Mobile Nav-Menu Admin Item inside Hamburger Menu
+                const navUl = document.querySelector('#ksrmsNavbar .navbar-nav');
+                if (navUl && !document.getElementById('mobileAdminNavItem')) {
+                    const adminLi = document.createElement('li');
+                    adminLi.id = 'mobileAdminNavItem';
+                    adminLi.className = 'nav-item d-xl-none mt-2 pt-2 border-top border-secondary text-center';
+                    adminLi.innerHTML = `
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <button class="btn btn-danger btn-sm fw-bold shadow-sm" onclick="triggerAdminPanelAccess()">
+                                <i class="fa-solid fa-user-gear me-1"></i> Master Admin Control
+                            </button>
+                            <button class="btn btn-warning btn-sm fw-bold text-dark shadow-sm" onclick="openLoginModal()">
+                                <i class="fa-solid fa-right-to-bracket me-1"></i> School Login
+                            </button>
+                        </div>`;
+                    navUl.appendChild(adminLi);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', injectMobileAdminBtns);
+            } else {
+                injectMobileAdminBtns();
+            }
+        })();
         
     </script>
 </body>
