@@ -5838,6 +5838,83 @@
                 injectMobileAdminBtns();
             }
         })();
+
+// ----------------------------------------------------------------------
+        // BLOCK DUPLICATE SECRET KEY GENERATION FOR SAME DISE CODE
+        // ----------------------------------------------------------------------
+        async function generateSecretKeyForSchool() {
+            const sName = document.getElementById('admGenSchoolName').value.trim();
+            const dise = document.getElementById('admGenDiseCode').value.trim();
+            const mob = document.getElementById('admGenMobile').value.trim();
+
+            if (!sName || !dise || !mob) return alert('ದಯವಿಟ್ಟು ಶಾಲೆಯ ಹೆಸರು, DISE Code ಮತ್ತು ಮೊಬೈಲ್ ಮೂರನ್ನೂ ನಮೂದಿಸಿ!');
+            if (!/^\d{11}$/.test(dise)) return alert('ಅಮಾನ್ಯ DISE Code! 11 ಅಂಕೆಗಳು ಕಡ್ಡಾಯ.');
+            if (!/^\d{10}$/.test(mob)) return alert('ಅಮಾನ್ಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ! 10 ಅಂಕೆಗಳು ಕಡ್ಡಾಯ.');
+
+            let existingRecord = null;
+
+            // 1. Check in Cloud Firestore Database
+            if (db) {
+                try {
+                    const docSnap = await db.collection("ksrms_licenses").doc(dise).get();
+                    if (docSnap.exists) {
+                        existingRecord = docSnap.data();
+                    }
+                } catch(e) {
+                    console.warn("Cloud check error:", e);
+                }
+            }
+
+            // 2. Check in Local Storage
+            if (!existingRecord) {
+                const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+                existingRecord = dbKeys.find(k => String(k.diseCode).trim() === dise);
+            }
+
+            // 3. BLOCK DUPLICATE REGISTRATION IF DISE CODE ALREADY EXISTS!
+            if (existingRecord) {
+                alert(`⚠️ ಈ DISE Code ಗೆ ಈಗಾಗಲೇ Secret Key ಜನರೇಟ್ ಮಾಡಲಾಗಿದೆ!\n\n` +
+                      `• DISE Code: ${dise}\n` +
+                      `• ನೋಂದಾಯಿತ ಹೆಸರು: ${existingRecord.schoolName}\n` +
+                      `• ನೋಂದಾಯಿತ ಮೊಬೈಲ್: ${existingRecord.mobile}\n` +
+                      `• ಚಾಲ್ತಿಯಲ್ಲಿರುವ Key: ${existingRecord.secretKey}\n\n` +
+                      `ಒಂದೇ DISE Code ಗೆ ಎರಡೆರಡು ಬಾರಿ Key ಜನರೇಟ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.`);
+
+                renderAdminKeysTable();
+                return;
+            }
+
+            // Proceed with NEW Key generation
+            const key = `KSRMS-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
+            const licenseObj = {
+                diseCode: dise,
+                schoolName: sName,
+                mobile: mob,
+                secretKey: key,
+                activatedAt: Date.now(),
+                expiresAt: Date.now() + (365 * 24 * 60 * 60 * 1000),
+                status: 'ACTIVE'
+            };
+
+            // Save locally
+            const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+            dbKeys.push(licenseObj);
+            localStorage.setItem('ksrms_keys_db', JSON.stringify(dbKeys));
+
+            // Save to Firebase Cloud so any phone/computer can log in
+            if (db) {
+                try {
+                    await db.collection("ksrms_licenses").doc(dise).set(licenseObj);
+                } catch(e) {
+                    console.error("Cloud license save error:", e);
+                }
+            }
+
+            document.getElementById('genKeyText').innerHTML = `<b>Key Generated:</b> <span class="text-success fs-6 fw-bold">${key}</span>`;
+            document.getElementById('genKeyOutputContainer').classList.remove('d-none');
+            renderAdminKeysTable();
+            alert(`ಹೊಸ Secret Key ಜನರೇಟ್ ಆಗಿದೆ ಮತ್ತು ಕ್ಲೌಡ್‌ಗೆ ಉಳಿಸಲಾಗಿದೆ:\n\nKey: ${key}`);
+        }
         
     </script>
 </body>
