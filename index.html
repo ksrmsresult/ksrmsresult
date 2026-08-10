@@ -5444,6 +5444,175 @@
             }
             renderDashboardTables(); // Force real-time Dashboard Category refresh!
         };
+
+        // ----------------------------------------------------------------------
+        // FLAWLESS REALTIME CATEGORY STATISTICS & GENDER-INDEPENDENT DASHBOARD SYNC
+        // ----------------------------------------------------------------------
+        function getCategoryGroup(catStr) {
+            if (!catStr) return 'OBC';
+            const clean = String(catStr).trim().toUpperCase();
+
+            if (clean.includes('SC') || clean.includes('ಎಸ್‌ಸಿ') || clean.includes('ಎಸ್.ಸಿ') || clean.includes('SCHEDULED CASTE')) {
+                return 'SC';
+            }
+            if (clean.includes('ST') || clean.includes('ಎಸ್‌ಟಿ') || clean.includes('ಎಸ್.ಟಿ') || clean.includes('SCHEDULED TRIBE')) {
+                return 'ST';
+            }
+            if (clean.includes('GM') || clean.includes('GENERAL') || clean.includes('GEN') || clean.includes('ಸಾಮಾನ್ಯ') || clean.includes('MERIT')) {
+                return 'GM';
+            }
+            // Cat-1, 2A, 2B, 3A, 3B, Cat-1 / OBC, Others, OBC ಇವೆಲ್ಲವೂ OBC ವರ್ಗಕ್ಕೆ ಸೇರುತ್ತವೆ
+            return 'OBC';
+        }
+
+        function normalizeClassName(cls) {
+            if (!cls) return "";
+            return String(cls).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function renderDashboardTables() {
+            const students = Array.isArray(sampleStudents) ? sampleStudents : [];
+            const totalCount = students.length;
+
+            const isGirlStrict = s => {
+                const g = String(s?.gender || '').trim().toLowerCase();
+                return ['girl', 'female', 'f', 'ಹೆಣ್ಣು', 'ಹೆ', 'g'].includes(g);
+            };
+
+            const isBoyStrict = s => {
+                const g = String(s?.gender || '').trim().toLowerCase();
+                return ['boy', 'male', 'm', 'ಗಂಡು', 'ಗಂ', 'b'].includes(g) || (!isGirlStrict(s) && g !== '');
+            };
+
+            const totalGirls = students.filter(isGirlStrict).length;
+            const totalBoys = students.filter(isBoyStrict).length;
+
+            const boysPercStr = totalCount > 0 ? ((totalBoys / totalCount) * 100).toFixed(1) + '%' : '0.0%';
+            const girlsPercStr = totalCount > 0 ? ((totalGirls / totalCount) * 100).toFixed(1) + '%' : '0.0%';
+
+            const elTot = document.getElementById('dashTotalStudents');
+            const elBg = document.getElementById('dashBoysGirlsCount');
+            const elBp = document.getElementById('dashBoysPerc');
+            const elGp = document.getElementById('dashGirlsPerc');
+
+            if (elTot) elTot.innerText = totalCount;
+            if (elBg) elBg.innerText = `${totalBoys} / ${totalGirls}`;
+            if (elBp) elBp.innerText = boysPercStr;
+            if (elGp) elGp.innerText = girlsPercStr;
+
+            const activeClasses = getClassesInSelectedRange();
+
+            // 1. ತರಗತಿವಾರು ಸಂಖ್ಯೆ ಟೇಬಲ್ Auto-Update
+            const classBody = document.getElementById('dashClasswiseTableBody');
+            if (classBody) {
+                let classHtml = "";
+                activeClasses.forEach(cls => {
+                    const normCls = normalizeClassName(cls);
+                    const filtered = students.filter(s => s && normalizeClassName(s.className).startsWith(normCls));
+                    const f = filtered.filter(isGirlStrict).length;
+                    const m = filtered.length - f;
+                    const tot = filtered.length;
+
+                    classHtml += `
+                        <tr>
+                            <td class="fw-bold">${cls}</td>
+                            <td class="text-primary fw-bold">${m}</td>
+                            <td class="text-danger fw-bold">${f}</td>
+                            <td class="fw-bold bg-light">${tot}</td>
+                        </tr>`;
+                });
+                classBody.innerHTML = classHtml;
+            }
+
+            // 2. ಪ್ರವರ್ಗವಾರು (Category Statistics) 100% ಗ್ಯಾರಂಟಿ ಅಪ್ಡೇಟ್
+            const catBody = document.getElementById('dashCategoryTableBody');
+            if (catBody) {
+                let catHtml = "";
+
+                let totScM = 0, totScF = 0;
+                let totStM = 0, totStF = 0;
+                let totGmM = 0, totGmF = 0;
+                let totObcM = 0, totObcF = 0;
+
+                activeClasses.forEach(cls => {
+                    const normCls = normalizeClassName(cls);
+                    const filtered = students.filter(s => s && normalizeClassName(s.className).startsWith(normCls));
+
+                    // SC ಲೆಕ್ಕಾಚಾರ
+                    const scList = filtered.filter(s => getCategoryGroup(s.casteCat) === 'SC');
+                    const scT = scList.length;
+                    const scF = scList.filter(isGirlStrict).length;
+                    const scM = scT - scF;
+
+                    // ST ಲೆಕ್ಕಾಚಾರ
+                    const stList = filtered.filter(s => getCategoryGroup(s.casteCat) === 'ST');
+                    const stT = stList.length;
+                    const stF = stList.filter(isGirlStrict).length;
+                    const stM = stT - stF;
+
+                    // GM ಲೆಕ್ಕಾಚಾರ
+                    const gmList = filtered.filter(s => getCategoryGroup(s.casteCat) === 'GM');
+                    const gmT = gmList.length;
+                    const gmF = gmList.filter(isGirlStrict).length;
+                    const gmM = gmT - gmF;
+
+                    // OBC (Cat-1, 2A, 2B, 3A, 3B, Others) ಲೆಕ್ಕಾಚಾರ
+                    const obcList = filtered.filter(s => getCategoryGroup(s.casteCat) === 'OBC');
+                    const obcT = obcList.length;
+                    const obcF = obcList.filter(isGirlStrict).length;
+                    const obcM = obcT - obcF;
+
+                    const grandM = scM + stM + gmM + obcM;
+                    const grandF = scF + stF + gmF + obcF;
+                    const grandT = filtered.length; // ತರಗತಿಯ ಒಟ್ಟು ಮಕ್ಕಳಿಗೆ ನೂರಕ್ಕೆ ನೂರರಷ್ಟು ಸಮನಾಗಿರುತ್ತದೆ
+
+                    totScM += scM; totScF += scF;
+                    totStM += stM; totStF += stF;
+                    totGmM += gmM; totGmF += gmF;
+                    totObcM += obcM; totObcF += obcF;
+
+                    catHtml += `
+                        <tr>
+                            <td class="fw-bold">${cls}</td>
+                            <td>${scM}</td><td>${scF}</td><td class="fw-bold">${scT}</td>
+                            <td>${stM}</td><td>${stF}</td><td class="fw-bold">${stT}</td>
+                            <td>${gmM}</td><td>${gmF}</td><td class="fw-bold">${gmT}</td>
+                            <td>${obcM}</td><td>${obcF}</td><td class="fw-bold">${obcT}</td>
+                            <td class="bg-warning text-dark fw-bold">${grandM}</td>
+                            <td class="bg-warning text-dark fw-bold">${grandF}</td>
+                            <td class="bg-warning text-dark fw-bold">${grandT}</td>
+                        </tr>`;
+                });
+
+                const totGrandM = totScM + totStM + totGmM + totObcM;
+                const totGrandF = totScF + totStF + totGmF + totObcF;
+                const totGrandT = students.length;
+
+                catHtml += `
+                    <tr class="table-dark fw-bold">
+                        <td>Total</td>
+                        <td>${totScM}</td><td>${totScF}</td><td>${totScM + totScF}</td>
+                        <td>${totStM}</td><td>${totStF}</td><td>${totStM + totStF}</td>
+                        <td>${totGmM}</td><td>${totGmF}</td><td>${totGmM + totGmF}</td>
+                        <td>${totObcM}</td><td>${totObcF}</td><td>${totObcM + totObcF}</td>
+                        <td class="bg-warning text-dark">${totGrandM}</td>
+                        <td class="bg-warning text-dark">${totGrandF}</td>
+                        <td class="bg-warning text-dark">${totGrandT}</td>
+                    </tr>`;
+
+                catBody.innerHTML = catHtml;
+            }
+        }
+
+        // Auto Refresh
+        if (typeof onClassChangeHandle === 'function') {
+            const _origClassChange = onClassChangeHandle;
+            onClassChangeHandle = function() {
+                _origClassChange();
+                renderDashboardTables();
+            };
+        }
+        
     </script>
 </body>
 </html>
