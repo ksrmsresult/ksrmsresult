@@ -6291,6 +6291,72 @@
                 }
             };
         }
+
+// ----------------------------------------------------------------------
+        // DIRECT TOTAL WORKING DAYS INPUT BOX & AUTO-SYNC FIX
+        // ----------------------------------------------------------------------
+        if (!appSettings.totalWorkingDays) {
+            appSettings.totalWorkingDays = 239;
+        }
+
+        function updateGlobalWorkingDays(val) {
+            if (!checkLicensePermission("modify total working days")) return;
+            const num = parseInt(val) || 239;
+            appSettings.totalWorkingDays = num;
+
+            // Database ನಲ್ಲಿರುವ ಎಲ್ಲಾ ಮಕ್ಕಳಿಗೂ ಅಪ್ಡೇಟ್ ಮಾಡುವುದು
+            sampleStudents.forEach(s => {
+                if (!s.co) s.co = {};
+                s.co.totalDays = num;
+            });
+
+            syncSchoolDataToCloud();
+            renderCoGrid();
+            alert(`ಶಾಲೆ ನಡೆದ ಒಟ್ಟು ದಿನಗಳ ಸಂಖ್ಯೆಯನ್ನು ${num} ಎಂದು ನವೀಕರಿಸಲಾಗಿದೆ.\n\nಎಲ್ಲಾ ಮಕ್ಕಳ ಮುಂದೆಯೂ ${num} ದಿನಗಳು ಆಟೋ-ಅಪ್ಡೇಟ್ ಆಗಿವೆ!`);
+        }
+
+        // Direct, flawless override of renderCoGrid with Input Box
+        renderCoGrid = function() {
+            const selectedClass = document.getElementById('filterClassMarks') ? document.getElementById('filterClassMarks').value : window.ksrmsState.activeClass;
+            const tbody = document.getElementById('coGridBody');
+            if (!tbody) return;
+
+            const currentWorkingDays = appSettings.totalWorkingDays || 239;
+
+            // ಟೇಬಲ್ ಹೆಡರ್‌ನಲ್ಲಿ ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್ ಪ್ರತ್ಯಕ್ಷಗೊಳಿಸುವುದು
+            const coTable = document.querySelector('#coGridBody')?.closest('table');
+            if (coTable) {
+                const thTot = coTable.querySelector('thead th[data-i18n="th_tot_days"]') || coTable.querySelectorAll('thead th')[11];
+                if (thTot) {
+                    thTot.innerHTML = `ಶಾಲೆ ನಡೆದ ದಿನಗಳು<br><input type="number" class="mark-input text-primary fw-bold mt-1" style="width:58px; background:#fff; border:2px solid #800020;" value="${currentWorkingDays}" onchange="updateGlobalWorkingDays(this.value)" title="ಇಲ್ಲಿ ದಿನ ಬದಲಾಯಿಸಿದರೆ ಎಲ್ಲಾ ಮಕ್ಕಳಿಗೂ ಆಟೋ ಅಪ್ಡೇಟ್ ಆಗುತ್ತದೆ">`;
+                }
+            }
+
+            const filtered = selectedClass === 'ALL' ? sampleStudents : sampleStudents.filter(s => s.className === selectedClass);
+
+            tbody.innerHTML = filtered.map((s, idx) => {
+                const isCwsnExempt = s.cwsnStatus === 'Yes-Exempt';
+                const c = s.co || { c1:'B', c2:'B', c3:'B', c4:'B', c5:'B', c6:'B', c7:'B', ict: 75, attDays:205, res:'ಉತ್ತೀರ್ಣ' };
+                const ictGrade = isCwsnExempt ? 'CWSN' : getGradeFromScore(c.ict, 100, c.ict !== undefined);
+                return `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td class="text-start fw-bold">${s.name} ${isCwsnExempt ? '<span class="badge bg-danger">CWSN</span>':''}</td>
+                    <td>${renderGradeDropdown(s.id, 'c1', c.c1)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c2', c.c2)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c3', c.c3)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c4', c.c4)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c5', c.c5)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c6', c.c6)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c7', c.c7)}</td>
+                    <td><input type="text" class="mark-input" value="${isCwsnExempt ? 'CWSN' : (c.ict!==undefined?c.ict:'')}" ${isCwsnExempt?'disabled':''} onchange="updateCoGrade('${s.id}', 'ict', this.value)"></td>
+                    <td><span class="badge bg-primary">${ictGrade}</span></td>
+                    <td><input type="number" class="mark-input fw-bold text-primary" style="width:58px;" value="${currentWorkingDays}" onchange="updateGlobalWorkingDays(this.value)" title="ಇಲ್ಲಿ ಬದಲಾಯಿಸಿದರೆ ಎಲ್ಲಾ ಮಕ್ಕಳಿಗೂ ಆಟೋ ಅಪ್ಡೇಟ್ ಆಗುತ್ತದೆ"></td>
+                    <td><input type="number" class="mark-input" value="${c.attDays||205}" onchange="updateCoGrade('${s.id}', 'attDays', this.value)"></td>
+                    <td class="fw-bold ${isCwsnExempt?'text-danger':'text-success'}">${isCwsnExempt ? 'CWSN' : (c.res || 'ಉತ್ತೀರ್ಣ')}</td>
+                </tr>`;
+            }).join('');
+        };
         
     </script>
 </body>
