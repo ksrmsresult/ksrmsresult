@@ -5749,6 +5749,47 @@
                 catBody.innerHTML = catHtml;
             }
         }
+
+        // ----------------------------------------------------------------------
+        // FORCE PERFECT A4 PORTRAIT PRINT MODE FOR FA1/2/3/4 & SA1/2 EXAM SHEETS
+        // ----------------------------------------------------------------------
+        function applyPortraitMode() {
+            const styleEl = document.getElementById('dynamicPageStyle');
+            if (styleEl) styleEl.innerHTML = `@page { size: A4 portrait !important; margin: 4mm 5mm !important; }`;
+            document.body.classList.remove('force-landscape-mode');
+            document.body.classList.add('force-portrait-mode');
+        }
+
+        function applyLandscapeMode() {
+            const styleEl = document.getElementById('dynamicPageStyle');
+            if (styleEl) styleEl.innerHTML = `@page { size: A4 landscape !important; margin: 4mm 5mm !important; }`;
+            document.body.classList.remove('force-portrait-mode');
+            document.body.classList.add('force-landscape-mode');
+        }
+
+        // FA1/2/3/4 & SA1/2 ಪರೀಕ್ಷಾ ಶೀಟ್‌ಗಳಿಗೆ Portrait Mode ಕಡ್ಡಾಯಗೊಳಿಸಲಾಗಿದೆ
+        if (typeof renderExamSheetReportAndPrint === 'function') {
+            const _origExamSheetFunc = renderExamSheetReportAndPrint;
+            renderExamSheetReportAndPrint = function() {
+                applyPortraitMode();
+                
+                if (typeof _origExamSheetFunc === 'function') {
+                    _origExamSheetFunc();
+                }
+
+                // A4 Portrait ಗೆ ಸರಿಯಾಗಿ Fit ಆಗಲು max-width 198mm ಹೊಂದಿಸಲಾಗಿದೆ
+                const container = document.getElementById('printContainer');
+                if (container) {
+                    const innerDiv = container.querySelector('div');
+                    if (innerDiv) {
+                        innerDiv.style.maxWidth = '198mm';
+                        innerDiv.style.margin = '0 auto';
+                    }
+                }
+
+                applyPortraitMode();
+            };
+        }
         
     </script>
 </body>
