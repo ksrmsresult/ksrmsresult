@@ -5977,6 +5977,183 @@
                     </tr>`;
             }).join('');
         }
+
+// ----------------------------------------------------------------------
+        // PERFECT 100 BROADSHEET TABLE HEADER ALIGNMENT FIX
+        // ----------------------------------------------------------------------
+        function renderCumulative100Broadsheet() {
+            const selectedClass = getActiveReportClass();
+            const cat = getClassCategory(selectedClass);
+
+            if (cat === 'CLASS9' || cat === 'CLASS10') {
+                openConsolidatedResultRegister();
+                return;
+            }
+
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 landscape; margin: 4mm; }`;
+            const isLower = selectedClass.startsWith('1st') || selectedClass.startsWith('2nd') || selectedClass.startsWith('3rd') || selectedClass.startsWith('4th') || selectedClass.startsWith('5th');
+            const filtered = sampleStudents.filter(s => s.className === selectedClass);
+            const ctName = getCurrentClassTeacherName(selectedClass, 'A');
+
+            let headerHtml = isLower ? `
+                <tr class="bg-dark text-white text-center fs-8">
+                    <th rowspan="2" class="align-middle">ಕ್ರ.ಸಂ</th>
+                    <th rowspan="2" class="align-middle">ದಾಖಲಾತಿ ಸಂ</th>
+                    <th rowspan="2" class="align-middle vertical-text">SATS ಸಂಖ್ಯೆ</th>
+                    <th rowspan="2" class="align-middle" style="min-width:140px;">ವಿದ್ಯಾರ್ಥಿ/ನಿಯರ ಹೆಸರು</th>
+                    <th rowspan="2" class="align-middle">ಜನನ ದಿನಾಂಕ</th>
+                    <th rowspan="2" class="align-middle">ಲಿಂಗ</th>
+                    <th rowspan="2" class="align-middle">Social Cat</th>
+                    <th rowspan="2" class="align-middle">ಜಾತಿ</th>
+                    <th rowspan="2" class="align-middle">ಹಾಜರಿದ್ದ ದಿನಗಳು</th>
+                    <th colspan="2">${getSubjectLabelWithLanguage('s1', 'ಪ್ರಥಮ ಭಾಷೆ (100)')}</th>
+                    <th colspan="2">${getSubjectLabelWithLanguage('s2', 'ದ್ವಿತೀಯ ಭಾಷೆ (100)')}</th>
+                    <th colspan="2">ಗಣಿತ (100)</th>
+                    <th colspan="2">ಪರಿಸರ ಅಧ್ಯಯನ (100)</th>
+                    <th rowspan="2" class="align-middle bg-warning text-dark">ಒಟ್ಟು ಅಂಕ (400)</th>
+                    <th rowspan="2" class="align-middle bg-warning text-dark">ಶೇಕಡಾ (%)</th>
+                    <th rowspan="2" class="align-middle bg-warning text-dark">ಶ್ರೇಣಿ</th>
+                    <th colspan="6">ಸಹ ಪಠ್ಯ ಚಟುವಟಿಕೆಗಳು</th>
+                    <th rowspan="2" class="align-middle bg-success text-white">ಫಲಿತಾಂಶ</th>
+                </tr>
+                <tr class="bg-secondary text-white text-center fs-8">
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th class="vertical-text">ದೈಹಿಕ/ಮೌಲ್ಯ ಶಿಕ್ಷಣ</th>
+                    <th class="vertical-text">ಕಲಾ ಶಿಕ್ಷಣ</th>
+                    <th class="vertical-text">ಕಾರ್ಯಾನುಭವ</th>
+                    <th class="vertical-text">ಸಂಗೀತ &amp; ನೃತ್ಯ</th>
+                    <th class="vertical-text">ಸಾಂಸ್ಕೃತಿಕ &amp; ಮೌಲ್ಯ</th>
+                    <th class="vertical-text">ಮೌಲ್ಯಗಳು</th>
+                </tr>` : `
+                <tr class="bg-dark text-white text-center fs-8">
+                    <th rowspan="2" class="align-middle">ದಾಖಲಾತಿ ಸಂಖ್ಯೆ</th>
+                    <th rowspan="2" class="align-middle vertical-text">SATS ಸಂಖ್ಯೆ</th>
+                    <th rowspan="2" class="align-middle" style="min-width:140px;">ವಿದ್ಯಾರ್ಥಿ/ನಿಯರ ಹೆಸರು</th>
+                    <th rowspan="2" class="align-middle">ಜನನ ದಿನಾಂಕ</th>
+                    <th rowspan="2" class="align-middle">ಲಿಂಗ</th>
+                    <th rowspan="2" class="align-middle">ಜಾತಿ</th>
+                    <th rowspan="2" class="align-middle">ಹಾಜರಿದ್ದ ದಿನಗಳು</th>
+                    <th colspan="2">${getSubjectLabelWithLanguage('s1', 'ಪ್ರಥಮ ಭಾಷೆ (100)')}</th>
+                    <th colspan="2">${getSubjectLabelWithLanguage('s2', 'ದ್ವಿತೀಯ ಭಾಷೆ (100)')}</th>
+                    <th colspan="2">${getSubjectLabelWithLanguage('s3', 'ತೃತೀಯ ಭಾಷೆ (100)')}</th>
+                    <th colspan="2">ಗಣಿತ (100)</th>
+                    <th colspan="2">ವಿಜ್ಞಾನ (100)</th>
+                    <th colspan="2">ಸಮಾಜ ವಿಜ್ಞಾನ (100)</th>
+                    <th colspan="2">ದೈಹಿಕ / ಮೌಲ್ಯ ಶಿಕ್ಷಣ (100)</th>
+                    <th rowspan="2" class="align-middle bg-warning text-dark">ಒಟ್ಟು ಅಂಕ (700)</th>
+                    <th rowspan="2" class="align-middle bg-warning text-dark">ಶೇಕಡಾ (%)</th>
+                    <th rowspan="2" class="align-middle bg-warning text-dark">ಶ್ರೇಣಿ</th>
+                    <th colspan="2">ಕಲಾ ಶಿಕ್ಷಣ</th>
+                    <th rowspan="2" class="align-middle">ICT</th>
+                    <th colspan="7">ಸಹ ಪಠ್ಯ ಚಟುವಟಿಕೆಗಳು</th>
+                    <th rowspan="2" class="align-middle bg-success text-white">ಫಲಿತಾಂಶ</th>
+                </tr>
+                <tr class="bg-secondary text-white text-center fs-8">
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>ಅಂಕ</th><th>ಶ್ರೇಣಿ</th>
+                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th>
+                </tr>`;
+
+            let bodyHtml = filtered.map((s, idx) => {
+                const isCwsnExempt = s.cwsnStatus === 'Yes-Exempt';
+                const m1 = calculateSubjectScores(s.marks['s1'] || {}, isCwsnExempt, s.className);
+                const m2 = calculateSubjectScores(s.marks['s2'] || {}, isCwsnExempt, s.className);
+                const m3 = calculateSubjectScores(s.marks['s3'] || {}, isCwsnExempt, s.className);
+                const m4 = calculateSubjectScores(s.marks['s4'] || {}, isCwsnExempt, s.className);
+                const m5 = calculateSubjectScores(s.marks['s5'] || {}, isCwsnExempt, s.className);
+                const m6 = calculateSubjectScores(s.marks['s6'] || {}, isCwsnExempt, s.className);
+                const m7 = calculateSubjectScores(s.marks['s7'] || {}, isCwsnExempt, s.className);
+                const co = s.co || { c1:'A', c2:'A', c3:'A', c4:'A', c5:'A', c6:'A', c7:'A', ict: 75, attDays:205 };
+
+                if (isLower) {
+                    if (isCwsnExempt) {
+                        return `
+                        <tr class="table-danger text-center align-middle">
+                            <td>${idx + 1}</td><td>${s.admissionNo || '-'}</td><td>${s.sats || '-'}</td>
+                            <td class="text-start fw-bold ps-1">${s.name} <span class="badge bg-danger ms-1">CWSN</span></td><td>${cleanDateFormat(s.dob)}</td>
+                            <td>${s.gender === 'Boy' ? 'ಗಂ' : s.gender === 'Girl' ? 'ಹೆ' : '-'}</td><td>${s.casteCat || '-'}</td><td>${s.casteName || '-'}</td><td>${co.attDays || 205}</td>
+                            <td colspan="18" class="fw-bold text-danger text-center align-middle fs-6">CWSN (Exam Exempted)</td>
+                        </tr>`;
+                    }
+                    const tot = m1.subjectGrandTot + m2.subjectGrandTot + m4.subjectGrandTot + m5.subjectGrandTot;
+                    const perc = ((tot / 400) * 100).toFixed(0) + '%';
+                    const grade = getGradeFromScore(tot, 400, true);
+                    return `
+                    <tr class="text-center align-middle fs-8">
+                        <td>${idx + 1}</td><td>${s.admissionNo || '-'}</td><td>${s.sats || '-'}</td>
+                        <td class="text-start fw-bold ps-1">${s.name}</td><td>${cleanDateFormat(s.dob)}</td>
+                        <td>${s.gender === 'Boy' ? 'ಗಂ' : s.gender === 'Girl' ? 'ಹೆ' : '-'}</td><td>${s.casteCat || '-'}</td><td>${s.casteName || '-'}</td><td>${co.attDays || 205}</td>
+                        <td>${m1.subjectGrandTot}</td><td class="fw-bold">${m1.gGrand}</td>
+                        <td>${m2.subjectGrandTot}</td><td class="fw-bold">${m2.gGrand}</td>
+                        <td>${m4.subjectGrandTot}</td><td class="fw-bold">${m4.gGrand}</td>
+                        <td>${m5.subjectGrandTot}</td><td class="fw-bold">${m5.gGrand}</td>
+                        <td class="fw-bold">${tot}</td><td class="fw-bold">${perc}</td><td class="fw-bold text-primary">${grade}</td>
+                        <td>${co.c1}</td><td>${co.c2}</td><td>${co.c3}</td><td>${co.c4}</td><td>${co.c5}</td><td>${co.c6}</td>
+                        <td class="fw-bold text-success">${co.res || 'ಉತ್ತೀರ್ಣ'}</td>
+                    </tr>`;
+                } else {
+                    if (isCwsnExempt) {
+                        return `
+                        <tr class="table-danger text-center align-middle">
+                            <td>${s.admissionNo || '-'}</td><td>${s.sats || '-'}</td>
+                            <td class="text-start fw-bold ps-1">${s.name} <span class="badge bg-danger ms-1">CWSN</span></td><td>${cleanDateFormat(s.dob)}</td>
+                            <td>${s.gender === 'Boy' ? 'ಗಂ' : s.gender === 'Girl' ? 'ಹೆ' : '-'}</td><td>${s.casteCat || '-'}${s.casteName ? `/${s.casteName}` : ''}</td>
+                            <td>${co.attDays || 205}</td>
+                            <td colspan="28" class="fw-bold text-danger text-center align-middle fs-6">CWSN (Exam Exempted)</td>
+                        </tr>`;
+                    }
+                    const tot = m1.subjectGrandTot + m2.subjectGrandTot + m3.subjectGrandTot + m4.subjectGrandTot + m5.subjectGrandTot + m6.subjectGrandTot + m7.subjectGrandTot;
+                    const perc = ((tot / 700) * 100).toFixed(0) + '%';
+                    const grade = getGradeFromScore(tot, 700, true);
+                    return `
+                    <tr class="text-center align-middle fs-8">
+                        <td>${s.admissionNo || '-'}</td><td>${s.sats || '-'}</td>
+                        <td class="text-start fw-bold ps-1">${s.name}</td><td>${cleanDateFormat(s.dob)}</td>
+                        <td>${s.gender === 'Boy' ? 'ಗಂ' : s.gender === 'Girl' ? 'ಹೆ' : '-'}</td><td>${s.casteCat || '-'}${s.casteName ? `/${s.casteName}` : ''}</td>
+                        <td>${co.attDays || 205}</td>
+                        <td>${m1.subjectGrandTot}</td><td class="fw-bold">${m1.gGrand}</td>
+                        <td>${m2.subjectGrandTot}</td><td class="fw-bold">${m2.gGrand}</td>
+                        <td>${m3.subjectGrandTot}</td><td class="fw-bold">${m3.gGrand}</td>
+                        <td>${m4.subjectGrandTot}</td><td class="fw-bold">${m4.gGrand}</td>
+                        <td>${m5.subjectGrandTot}</td><td class="fw-bold">${m5.gGrand}</td>
+                        <td>${m6.subjectGrandTot}</td><td class="fw-bold">${m6.gGrand}</td>
+                        <td>${m7.subjectGrandTot}</td><td class="fw-bold">${m7.gGrand}</td>
+                        <td class="fw-bold text-primary bg-light">${tot}</td>
+                        <td class="fw-bold">${perc}</td>
+                        <td class="fw-bold text-success">${grade}</td>
+                        <td>66</td><td class="fw-bold">B+</td>
+                        <td class="fw-bold text-primary">${co.ict||75}</td>
+                        <td>${co.c1||'A'}</td><td>${co.c2||'A'}</td><td>${co.c3||'A'}</td><td>${co.c4||'A'}</td><td>${co.c5||'A'}</td><td>${co.c6||'A'}</td><td>${co.c7||'A'}</td>
+                        <td class="fw-bold text-success">${co.res || 'ಉತ್ತೀರ್ಣ'}</td>
+                    </tr>`;
+                }
+            }).join('');
+
+            document.getElementById('printContainer').innerHTML = `
+                <div class="text-center mb-2" style="font-family: 'Anek Kannada', sans-serif;">
+                    <div class="fw-bold fs-6">ಕ್ಷೇತ್ರ ಶಿಕ್ಷಣಾಧಿಕಾರಿಗಳ ಕಾರ್ಯಾಲಯ ${appSettings.block}</div>
+                    <div class="report-school-name fs-4 fw-bold text-primary my-1">${appSettings.schoolName}</div>
+                    <div class="fw-bold text-dark fs-7">${appSettings.academicYear} ನೇ ಸಾಲಿನ ವಾರ್ಷಿಕ ಪರಿಣಾಮ ಪತ್ರಿಕೆ - ತರಗತಿ: ${selectedClass}</div>
+                </div>
+                <table class="cce-broadsheet-table mb-3 w-100" id="broadsheetTableToExport">
+                    <thead>${headerHtml}</thead>
+                    <tbody>${bodyHtml}</tbody>
+                </table>
+                <div class="d-flex justify-content-between pt-4 mt-3 fs-8 fw-bold">
+                    <div>ವರ್ಗ ಶಿಕ್ಷಕರ ಸಹಿ<br><small>${ctName}</small></div>
+                    <div>ಸಮೂಹ ಸಂಪನ್ಮೂಲ ವ್ಯಕ್ತಿಯ ಸಹಿ</div>
+                    <div>ಮುಖ್ಯ ಶಿಕ್ಷಕರ ಸಹಿ &amp; ಮೊಹರು<br><small>${appSettings.hmName}</small></div>
+                </div>`;
+        }
         
     </script>
 </body>
