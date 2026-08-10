@@ -5915,6 +5915,68 @@
             renderAdminKeysTable();
             alert(`ಹೊಸ Secret Key ಜನರೇಟ್ ಆಗಿದೆ ಮತ್ತು ಕ್ಲೌಡ್‌ಗೆ ಉಳಿಸಲಾಗಿದೆ:\n\nKey: ${key}`);
         }
+
+// ----------------------------------------------------------------------
+        // REAL-TIME CLOUD SYNC FOR MASTER ADMIN REGISTERED SCHOOLS TABLE
+        // ----------------------------------------------------------------------
+        async function renderAdminKeysTable() {
+            let dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+
+            // Fetch ALL registered school licenses from Firebase Cloud Database
+            if (db) {
+                try {
+                    const querySnap = await db.collection("ksrms_licenses").get();
+                    if (!querySnap.empty) {
+                        const cloudKeys = [];
+                        querySnap.forEach(doc => {
+                            cloudKeys.push(doc.data());
+                        });
+                        
+                        if (cloudKeys.length > 0) {
+                            dbKeys = cloudKeys;
+                            // Cache locally on this device
+                            localStorage.setItem('ksrms_keys_db', JSON.stringify(dbKeys));
+                        }
+                    }
+                } catch(err) {
+                    console.warn("Cloud licenses fetch error, using local fallback:", err);
+                }
+            }
+
+            const countEl = document.getElementById('adminTotalSchoolsCount');
+            if (countEl) countEl.innerText = dbKeys.length;
+
+            const tbody = document.getElementById('adminKeysTableBody');
+            if (!tbody) return;
+
+            if (dbKeys.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-muted p-3">ಯಾವುದೇ ಶಾಲೆಗಳು ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿಲ್ಲ.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = dbKeys.map(k => {
+                const expTime = k.expiresAt ? (typeof k.expiresAt === 'number' ? k.expiresAt : (k.expiresAt.toMillis ? k.expiresAt.toMillis() : Date.now())) : Date.now();
+                const isActive = Date.now() < expTime;
+
+                return `
+                    <tr>
+                        <td class="fw-bold">${k.diseCode}</td>
+                        <td class="text-start ps-2">${k.schoolName}</td>
+                        <td>${k.mobile || '-'}</td>
+                        <td class="fw-bold text-danger">${k.secretKey}</td>
+                        <td>${new Date(expTime).toLocaleDateString('en-GB')}</td>
+                        <td><span class="badge ${isActive ? 'bg-success':'bg-danger'}">${isActive ? 'ACTIVE':'EXPIRED'}</span></td>
+                        <td>
+                            <button class="btn btn-xs btn-outline-warning text-dark fw-bold py-0 px-2 me-1" onclick="changeSchoolMobile('${k.diseCode}')" title="Change Registered Mobile Number">
+                                <i class="fa-solid fa-mobile-screen me-1"></i> Edit Mobile
+                            </button>
+                            <button class="btn btn-xs btn-outline-danger fw-bold py-0 px-2" onclick="deleteSchoolByAdmin('${k.diseCode}')" title="Permanently Delete School">
+                                <i class="fa-solid fa-trash-can me-1"></i> Delete
+                            </button>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
         
     </script>
 </body>
