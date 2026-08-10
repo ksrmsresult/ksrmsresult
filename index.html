@@ -6154,6 +6154,86 @@
                     <div>ಮುಖ್ಯ ಶಿಕ್ಷಕರ ಸಹಿ &amp; ಮೊಹರು<br><small>${appSettings.hmName}</small></div>
                 </div>`;
         }
+
+        // ----------------------------------------------------------------------
+        // REMOVE DARK/BLACK BACKGROUND FILLS FROM ALL RESULT TABLES FOR CLEAN PRINT
+        // ----------------------------------------------------------------------
+        (function applyLightTableHeaders() {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'lightHeadersStyleFix';
+            styleEl.innerHTML = `
+                /* Screen & Print Light Table Header Overrides */
+                .cce-broadsheet-table th,
+                .table th,
+                .cce-broadsheet-table thead tr,
+                .table thead tr,
+                .bg-dark,
+                .bg-secondary {
+                    background-color: #f2f4f8 !important;
+                    color: #000000 !important;
+                    font-weight: 700 !important;
+                    border: 1px solid #000000 !important;
+                }
+
+                .table-dark {
+                    background-color: #f2f4f8 !important;
+                    color: #000000 !important;
+                }
+
+                .table-dark th {
+                    background-color: #f2f4f8 !important;
+                    color: #000000 !important;
+                    border: 1px solid #000000 !important;
+                }
+
+                /* Print-specific ink-saving light headers */
+                @media print {
+                    .cce-broadsheet-table th,
+                    .table th,
+                    .bg-dark,
+                    .bg-secondary,
+                    .bg-primary,
+                    .bg-success,
+                    .bg-warning {
+                        background-color: #f2f4f8 !important;
+                        color: #000000 !important;
+                        border: 1px solid #000000 !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+
+                    .table-dark, .table-dark th {
+                        background-color: #f2f4f8 !important;
+                        color: #000000 !important;
+                    }
+                }
+            `;
+            if (!document.getElementById('lightHeadersStyleFix')) {
+                document.head.appendChild(styleEl);
+            }
+        })();
+
+        // 100 Broadsheet Header Fix without dark backgrounds
+        const original100BroadsheetFunc = renderCumulative100Broadsheet;
+        renderCumulative100Broadsheet = function() {
+            if (typeof original100BroadsheetFunc === 'function') {
+                original100BroadsheetFunc();
+            }
+            // Strip any dark header classes from broadsheet table
+            const table = document.getElementById('broadsheetTableToExport');
+            if (table) {
+                const trs = table.querySelectorAll('thead tr');
+                trs.forEach(tr => {
+                    tr.className = 'bg-light text-dark text-center fs-8 border-dark';
+                });
+                const ths = table.querySelectorAll('thead th');
+                ths.forEach(th => {
+                    th.style.backgroundColor = '#f2f4f8';
+                    th.style.color = '#000000';
+                    th.style.borderColor = '#000000';
+                });
+            }
+        };
         
     </script>
 </body>
