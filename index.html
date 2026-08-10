@@ -5397,7 +5397,53 @@
                 catBody.innerHTML = catHtml;
             }
         }
+// ----------------------------------------------------------------------
+        // PERFECT CATEGORY EDIT & DASHBOARD REALTIME AUTO-UPDATE FIX
+        // ----------------------------------------------------------------------
+        function setCasteCatSelectValue(val) {
+            const selectEl = document.getElementById('stCasteCat');
+            if (!selectEl) return;
+            if (!val) { selectEl.value = ""; return; }
 
+            const norm = String(val).trim().toUpperCase();
+            let matched = "";
+
+            Array.from(selectEl.options).forEach(opt => {
+                const optVal = opt.value.trim().toUpperCase();
+                if (optVal === norm || (norm === 'GM' && optVal === 'GENERAL') || (norm === 'GENERAL' && optVal === 'GENERAL')) {
+                    matched = opt.value;
+                }
+            });
+
+            if (matched) {
+                selectEl.value = matched;
+            } else if (norm.includes('GM') || norm.includes('GENERAL') || norm.includes('GEN')) {
+                selectEl.value = "General";
+            } else {
+                selectEl.value = val;
+            }
+        }
+
+        // Edit Student Overrider to correctly populate Category dropdown
+        const originalEditStudentFunc = editStudent;
+        editStudent = function(id) {
+            if (typeof originalEditStudentFunc === 'function') {
+                originalEditStudentFunc(id);
+            }
+            const st = sampleStudents.find(s => String(s.id) === String(id));
+            if (st) {
+                setCasteCatSelectValue(st.casteCat);
+            }
+        };
+
+        // Save / Update Student Overrider to force immediate Dashboard Refresh
+        const originalSaveStudentFunc = handleSaveOrUpdateStudent;
+        handleSaveOrUpdateStudent = function() {
+            if (typeof originalSaveStudentFunc === 'function') {
+                originalSaveStudentFunc();
+            }
+            renderDashboardTables(); // Force real-time Dashboard Category refresh!
+        };
     </script>
 </body>
 </html>
