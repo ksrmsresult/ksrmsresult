@@ -6444,6 +6444,52 @@
             const waUrl = cleanMob.length >= 10 ? `https://api.whatsapp.com/send?phone=91${cleanMob.slice(-10)}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
             window.open(waUrl, '_blank');
         }
+
+// ----------------------------------------------------------------------
+        // BULK DELETE SELECTED STUDENTS FEATURE (SELECT ALL & DELETE)
+        // ----------------------------------------------------------------------
+        function deleteSelectedStudents() {
+            if (!checkLicensePermission("delete student records")) return;
+
+            const checkedBoxes = document.querySelectorAll('.st-select-check:checked');
+            if (checkedBoxes.length === 0) {
+                return alert('ದಯವಿಟ್ಟು ಅಳಿಸಬೇಕಾದ ವಿದ್ಯಾರ್ಥಿಗಳ ಚೌಕಟ್ಟನ್ನು (Checkboxes) ಆಯ್ಕೆ ಮಾಡಿ!');
+            }
+
+            const selectedIds = Array.from(checkedBoxes).map(cb => String(cb.value));
+
+            if (confirm(`ಖಚಿತವಾಗಿ ಆಯ್ಕೆಮಾಡಿದ ${selectedIds.length} ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರಗಳನ್ನು ಶಾಶ್ವತವಾಗಿ ಅಳಿಸಬೇಕೇ?\n\nಈ ಮಕ್ಕಳ ಅಂಕಗಳು ಹಾಗೂ ಡೇಟಾ ಸಂಪೂರ್ಣವಾಗಿ ಅಳಿಸಿಹೋಗುತ್ತದೆ.`)) {
+                sampleStudents = sampleStudents.filter(s => !selectedIds.includes(String(s.id)));
+                
+                const masterCheck = document.getElementById('selectAllCheck');
+                if (masterCheck) masterCheck.checked = false;
+
+                syncSchoolDataToCloud();
+                onClassChangeHandle();
+                alert(`ಆಯ್ಕೆಮಾಡಿದ ${selectedIds.length} ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಅಳಿಸಲಾಗಿದೆ.`);
+            }
+        }
+
+        // Student Database ಬಟನ್‌ಗಳ ಪಕ್ಕದಲ್ಲಿ [ ಆಯ್ಕೆಮಾಡಿದವರನ್ನು ಅಳಿಸಿ ] ಬಟನ್ ಸೇರಿಸುವುದು
+        (function injectBulkDeleteButton() {
+            function addBtn() {
+                const btnGroup = document.querySelector('#studentSection .card-header .d-flex');
+                if (btnGroup && !document.getElementById('btnBulkDeleteStudents')) {
+                    const bulkBtn = document.createElement('button');
+                    bulkBtn.id = 'btnBulkDeleteStudents';
+                    bulkBtn.className = 'btn btn-danger btn-sm fw-bold shadow-sm me-2';
+                    bulkBtn.onclick = deleteSelectedStudents;
+                    bulkBtn.innerHTML = `<i class="fa-solid fa-trash-can me-1"></i> ಆಯ್ಕೆಮಾಡಿದವರನ್ನು ಅಳಿಸಿ`;
+                    btnGroup.insertBefore(bulkBtn, btnGroup.firstChild);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', addBtn);
+            } else {
+                addBtn();
+            }
+        })();
         
     </script>
 </body>
