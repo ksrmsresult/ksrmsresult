@@ -6234,6 +6234,63 @@
                 });
             }
         };
+
+        // ----------------------------------------------------------------------
+        // GLOBAL SCHOOL TOTAL WORKING DAYS AUTO-SYNC FOR ALL STUDENTS
+        // ----------------------------------------------------------------------
+        if (!appSettings.totalWorkingDays) {
+            appSettings.totalWorkingDays = 239;
+        }
+
+        function updateGlobalWorkingDays(val) {
+            if (!checkLicensePermission("modify total working days")) return;
+            const num = parseInt(val) || 239;
+            appSettings.totalWorkingDays = num;
+
+            // Apply to all students in the database
+            sampleStudents.forEach(s => {
+                if (!s.co) s.co = {};
+                s.co.totalDays = num;
+            });
+
+            syncSchoolDataToCloud();
+            renderCoGrid();
+            alert(`ಶಾಲೆ ನಡೆದ ಒಟ್ಟು ದಿನಗಳ ಸಂಖ್ಯೆಯನ್ನು ${num} ಎಂದು ನವೀಕರಿಸಲಾಗಿದೆ.\n\nಎಲ್ಲಾ ಮಕ್ಕಳ ಮುಂದೆಯೂ ${num} ದಿನಗಳು ತಾನಾಗಿಯೇ Auto-Update ಆಗಿವೆ!`);
+        }
+
+        // Auto-inject global working days handler into Co-Scholastic table
+        if (typeof renderCoGrid === 'function') {
+            const _origRenderCoGridFunc = renderCoGrid;
+            renderCoGrid = function() {
+                _origRenderCoGridFunc();
+
+                const coTable = document.querySelector('#marksSection table');
+                if (coTable) {
+                    // Update Header Input Box
+                    const headers = coTable.querySelectorAll('thead th');
+                    headers.forEach(th => {
+                        if (th.innerText.includes('ಶಾಲೆ ನಡೆದ ದಿನಗಳು') || th.getAttribute('data-i18n') === 'th_tot_days') {
+                            const currentVal = appSettings.totalWorkingDays || 239;
+                            th.innerHTML = `ಶಾಲೆ ನಡೆದ ದಿನಗಳು<br><input type="number" class="mark-input text-primary fw-bold" style="width:58px; background:#fff; border: 1px solid #000;" value="${currentVal}" onchange="updateGlobalWorkingDays(this.value)" title="ಇಲ್ಲಿ ದಿನಗಳ ಸಂಖ್ಯೆ ಬದಲಾಯಿಸಿದರೆ ಎಲ್ಲಾ ಮಕ್ಕಳಿಗೂ ಅಪ್ಡೇಟ್ ಆಗುತ್ತದೆ">`;
+                        }
+                    });
+
+                    // Sync every student row's Total Working Days input box
+                    const rows = coTable.querySelectorAll('tbody tr');
+                    rows.forEach(tr => {
+                        const tds = tr.querySelectorAll('td');
+                        if (tds.length >= 12) {
+                            const totDaysInput = tds[11].querySelector('input');
+                            if (totDaysInput) {
+                                totDaysInput.value = appSettings.totalWorkingDays || 239;
+                                totDaysInput.onchange = function() { updateGlobalWorkingDays(this.value); };
+                                totDaysInput.title = "ಇಲ್ಲಿ ಬದಲಾಯಿಸಿದರೆ ಎಲ್ಲಾ ಮಕ್ಕಳಿಗೂ ಆಟೋ-ಅಪ್ಡೇಟ್ ಆಗುತ್ತದೆ";
+                            }
+                        }
+                    });
+                }
+            };
+        }
         
     </script>
 </body>
