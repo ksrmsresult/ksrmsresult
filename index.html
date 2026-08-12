@@ -6490,6 +6490,118 @@
                 addBtn();
             }
         })();
+
+        // ----------------------------------------------------------------------
+        // DYNAMIC CLASS-SPECIFIC SUBJECT GRADE ABSTRACT REPORT FIX
+        // ----------------------------------------------------------------------
+        function renderClassGradeAbstractReport() {
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 landscape; margin: 4mm; }`;
+            const selectedClass = getActiveReportClass();
+            const ctName = getCurrentClassTeacherName(selectedClass, 'A');
+
+            const isLower = selectedClass.startsWith('1st') || selectedClass.startsWith('2nd') || selectedClass.startsWith('3rd') || selectedClass.startsWith('4th') || selectedClass.startsWith('5th');
+
+            // 1-5th Standard vs 6-8th Standard Subjects Router
+            const subjects = isLower ? [
+                { id: 's1', name: getSubjectLabelWithLanguage('s1', 'ಪ್ರಥಮ ಭಾಷೆ (Kannada)') },
+                { id: 's2', name: getSubjectLabelWithLanguage('s2', 'ದ್ವಿತೀಯ ಭಾಷೆ (English)') },
+                { id: 's4', name: 'ಗಣಿತ (Mathematics)' },
+                { id: 's5', name: 'ಪರಿಸರ ಅಧ್ಯಯನ (EVS)' }
+            ] : [
+                { id: 's1', name: getSubjectLabelWithLanguage('s1', 'ಪ್ರಥಮ ಭಾಷೆ (Kannada)') },
+                { id: 's2', name: getSubjectLabelWithLanguage('s2', 'ದ್ವಿತೀಯ ಭಾಷೆ (English)') },
+                { id: 's3', name: getSubjectLabelWithLanguage('s3', 'ತೃತೀಯ ಭಾಷೆ (Hindi)') },
+                { id: 's4', name: 'ಗಣಿತ (Mathematics)' },
+                { id: 's5', name: 'ವಿಜ್ಞಾನ (Science)' },
+                { id: 's6', name: 'ಸಮಾಜ ವಿಜ್ಞಾನ (Social Science)' }
+            ];
+
+            const grades = ['A+', 'A', 'B+', 'B', 'C', 'D'];
+            const filtered = sampleStudents.filter(s => s.className === selectedClass);
+            const isCwsnExempt = s => s.cwsnStatus === 'Yes-Exempt';
+
+            // Calculate actual grade distribution for each subject dynamically
+            const gradeStats = {};
+            const subjectTotals = {};
+
+            subjects.forEach(sub => {
+                gradeStats[sub.id] = { 'A+':{m:0,f:0}, 'A':{m:0,f:0}, 'B+':{m:0,f:0}, 'B':{m:0,f:0}, 'C':{m:0,f:0}, 'D':{m:0,f:0} };
+                subjectTotals[sub.id] = { m:0, f:0, t:0 };
+
+                filtered.forEach(s => {
+                    if (isCwsnExempt(s)) return;
+                    const m = s.marks[sub.id] || {};
+                    const calc = calculateSubjectScores(m, false, s.className);
+                    const g = calc.gGrand || 'D';
+
+                    const isGirl = typeof detectGender === 'function' ? (detectGender(s.gender) === 'Girl') : String(s.gender).toLowerCase().includes('girl');
+
+                    if (gradeStats[sub.id][g]) {
+                        if (isGirl) {
+                            gradeStats[sub.id][g].f++;
+                            subjectTotals[sub.id].f++;
+                        } else {
+                            gradeStats[sub.id][g].m++;
+                            subjectTotals[sub.id].m++;
+                        }
+                        subjectTotals[sub.id].t++;
+                    }
+                });
+            });
+
+            // Dynamic Table Headers
+            const subHeadersRow1 = subjects.map(sub => `<th colspan="3" class="text-center">${sub.name}</th>`).join('');
+            const subHeadersRow2 = subjects.map(() => `<th>ಗಂ</th><th>ಹೆ</th><th>ಒ</th>`).join('');
+
+            // Data Rows for each Grade (A+, A, B+, B, C, D)
+            let bodyRowsHtml = grades.map(g => {
+                const cells = subjects.map(sub => {
+                    const st = gradeStats[sub.id][g];
+                    const tot = st.m + st.f;
+                    return `<td>${st.m}</td><td>${st.f}</td><td class="fw-bold">${tot}</td>`;
+                }).join('');
+
+                return `<tr><td class="fw-bold bg-light">${g}</td>${cells}</tr>`;
+            }).join('');
+
+            // Total Summary Row
+            const totalCells = subjects.map(sub => {
+                const st = subjectTotals[sub.id];
+                return `<td class="fw-bold">${st.m}</td><td class="fw-bold">${st.f}</td><td class="fw-bold text-primary">${st.t}</td>`;
+            }).join('');
+
+            const footerRowHtml = `<tr class="fw-bold bg-warning bg-opacity-25"><td>ಒಟ್ಟು</td>${totalCells}</tr>`;
+
+            document.getElementById('printContainer').innerHTML = `
+                <div class="text-center mb-3" style="font-family: 'Anek Kannada', sans-serif;">
+                    <div class="fw-bold fs-6">ಕ್ಷೇತ್ರ ಶಿಕ್ಷಣಾಧಿಕಾರಿಗಳ ಕಾರ್ಯಾಲಯ ${appSettings.block}</div>
+                    <div class="report-school-name fs-4 fw-bold text-primary my-1">${appSettings.schoolName}</div>
+                    <div class="fw-bold text-dark fs-6 bg-light d-inline-block px-3 py-1 border rounded">
+                        ${appSettings.academicYear} ನೇ ಸಾಲಿನ ವಾರ್ಷಿಕ ಪರಿಣಾಮ ಪತ್ರಿಕೆಯ ತರಗತಿ ಹಾಗೂ ವಿಷಯವಾರು ಘೋಷವಾರು | <strong>ತರಗತಿ: ${selectedClass}</strong>
+                    </div>
+                </div>
+
+                <table class="cce-broadsheet-table mb-3 w-100" id="broadsheetTableToExport" style="font-size: 0.8rem;">
+                    <thead>
+                        <tr class="bg-light text-dark text-center">
+                            <th rowspan="2" class="align-middle" style="width: 100px;">ಶ್ರೇಣಿ (Grade)</th>
+                            ${subHeadersRow1}
+                        </tr>
+                        <tr class="bg-light text-dark text-center">
+                            ${subHeadersRow2}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bodyRowsHtml}
+                        ${footerRowHtml}
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between pt-4 mt-3 fs-8 fw-bold">
+                    <div>ವರ್ಗ ಶಿಕ್ಷಕರ ಸಹಿ<br><small>${ctName}</small></div>
+                    <div>ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಹಿ &amp; ಮೊಹರು<br><small>${appSettings.hmName}</small></div>
+                </div>`;
+        }
         
     </script>
 </body>
