@@ -6602,6 +6602,101 @@
                     <div>ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಹಿ &amp; ಮೊಹರು<br><small>${appSettings.hmName}</small></div>
                 </div>`;
         }
+
+        // ----------------------------------------------------------------------
+        // 1-CLICK LICENSE RENEWAL FOR MASTER ADMIN PANEL
+        // ----------------------------------------------------------------------
+        async function renewSchoolLicense(diseCode) {
+            if (currentSession.role !== 'admin') return alert("Only Master Admin can renew licenses!");
+
+            let dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+            let found = dbKeys.find(k => String(k.diseCode).trim() === String(diseCode).trim());
+
+            if (db) {
+                try {
+                    const docSnap = await db.collection("ksrms_licenses").doc(diseCode).get();
+                    if (docSnap.exists) found = docSnap.data();
+                } catch(e) {}
+            }
+
+            if (!found) return alert("ಈ ಶಾಲೆಯ ನೋಂದಣಿ ವಿವರ ದೊರೆಯಲಿಲ್ಲ!");
+
+            const newExpiry = Date.now() + (365 * 24 * 60 * 60 * 1000);
+            const expDateStr = new Date(newExpiry).toLocaleDateString('en-GB');
+
+            if (confirm(`ಖಚಿತವಾಗಿ "${found.schoolName}" (DISE: ${diseCode}) ಶಾಲೆಯ ಲೈಸೆನ್ಸ್ ಅನ್ನು 1 ವರ್ಷಕ್ಕೆ (ಮರು-ನವೀಕರಣ) Renew ಮಾಡಬೇಕೇ?\n\nಹೊಸ ಲೈಸೆನ್ಸ್ ಅವಧಿ: ${expDateStr} ವರೆಗೆ ಸಕ್ರಿಯವಾಗಿರುತ್ತದೆ.`)) {
+                found.expiresAt = newExpiry;
+                found.status = 'ACTIVE';
+
+                localStorage.setItem('ksrms_keys_db', JSON.stringify(dbKeys));
+
+                if (db) {
+                    try {
+                        await db.collection("ksrms_licenses").doc(diseCode).update({
+                            expiresAt: newExpiry,
+                            status: 'ACTIVE'
+                        });
+                    } catch(e) {
+                        console.error("Cloud license renew error:", e);
+                    }
+                }
+
+                renderAdminKeysTable();
+                alert(`ಯಶಸ್ವಿಯಾಗಿದೆ! "${found.schoolName}" ಶಾಲೆಯ ಲೈಸೆನ್ಸ್ ${expDateStr} ವರೆಗೆ (1 Year) ನವೀಕರಿಸಲ್ಪಟ್ಟಿದೆ.\n\nಅವರ ಎಲ್ಲಾ ಹಳೆಯ ಡೇಟಾ ಸುರಕ್ಷಿತವಾಗಿದೆ.`);
+            }
+        }
+
+        // Admin Table Overrider with [ 🔄 Renew ] Button
+        if (typeof filterAdminKeysTable === 'function') {
+            const _origFilterAdminTable = filterAdminKeysTable;
+            filterAdminKeysTable = function() {
+                _origFilterAdminTable();
+
+                const tbody = document.getElementById('adminKeysTableBody');
+                if (!tbody) return;
+
+                const dbKeys = window.allAdminCloudKeys || JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+                const query = (document.getElementById('adminSearchKeyInput')?.value || '').trim().toLowerCase();
+
+                const filtered = dbKeys.filter(k => 
+                    String(k.diseCode || '').toLowerCase().includes(query) ||
+                    String(k.schoolName || '').toLowerCase().includes(query) ||
+                    String(k.mobile || '').toLowerCase().includes(query) ||
+                    String(k.secretKey || '').toLowerCase().includes(query)
+                );
+
+                if (filtered.length === 0) return;
+
+                tbody.innerHTML = filtered.map(k => {
+                    const expTime = k.expiresAt ? (typeof k.expiresAt === 'number' ? k.expiresAt : (k.expiresAt.toMillis ? k.expiresAt.toMillis() : Date.now())) : Date.now();
+                    const isActive = Date.now() < expTime;
+
+                    return `
+                        <tr>
+                            <td class="fw-bold text-primary">${k.diseCode}</td>
+                            <td class="text-start ps-2 fw-semibold">${k.schoolName}</td>
+                            <td>${k.mobile || '-'}</td>
+                            <td class="fw-bold text-danger fs-7">${k.secretKey}</td>
+                            <td>${new Date(expTime).toLocaleDateString('en-GB')}</td>
+                            <td><span class="badge ${isActive ? 'bg-success':'bg-danger'}">${isActive ? 'ACTIVE':'EXPIRED'}</span></td>
+                            <td>
+                                <button class="btn btn-xs btn-primary fw-bold py-0 px-2 me-1" onclick="renewSchoolLicense('${k.diseCode}')" title="1 ವರ್ಷಕ್ಕೆ ಮರು-ನವೀಕರಣಗೊಳಿಸಿ">
+                                    <i class="fa-solid fa-rotate me-1"></i> Renew
+                                </button>
+                                <button class="btn btn-xs btn-success fw-bold py-0 px-2 me-1" onclick="sendKeyToSchoolWhatsApp('${k.diseCode}', '${k.schoolName}', '${k.secretKey}', '${k.mobile}')" title="WhatsApp ಗೆ Secret Key ಕಳುಹಿಸಿ">
+                                    <i class="fa-brands fa-whatsapp me-1"></i> WA
+                                </button>
+                                <button class="btn btn-xs btn-outline-warning text-dark fw-bold py-0 px-2 me-1" onclick="changeSchoolMobile('${k.diseCode}')" title="Change Registered Mobile Number">
+                                    <i class="fa-solid fa-mobile-screen me-1"></i> Edit
+                                </button>
+                                <button class="btn btn-xs btn-outline-danger fw-bold py-0 px-2" onclick="deleteSchoolByAdmin('${k.diseCode}')" title="Permanently Delete School">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                }).join('');
+            };
+        }
         
     </script>
 </body>
