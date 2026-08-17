@@ -6940,6 +6940,354 @@
                     </div>
                 </div>`;
         }
+
+        // ----------------------------------------------------------------------
+        // 100% FULL SYSTEM & PRINT RESULT SHEETS BILINGUAL TRANSLATOR
+        // ----------------------------------------------------------------------
+        const extendedI18n = {
+            kn: {
+                banner_title: "ಡೆಮೋ ಪ್ರಿಪ್ಯೂರ್ ಮೋಡ್ (Free Public Demo Mode)",
+                banner_desc: "ಸಾರ್ವಜನಿಕ ಉಚಿತ ಡೆಮೋ ಮೋಡ್‌ನಲ್ಲಿದ್ದೀರಿ. ನಿಮ್ಮ ಶಾಲೆಯ ನೈಜ ಡೇಟಾವನ್ನು ಬಳಸಲು ಮತ್ತು ಮುದ್ರಿಸಲು ಲಾಗಿನ್ ಆಗಿ ಅಥವಾ Secret Key ಖರೀದಿಸಿ.",
+                label_academic_year: "ಪ್ರಸ್ತುತ ಶೈಕ್ಷಣಿಕ ವರ್ಷ:",
+                label_login_status: "ಶಾಲಾ ಲಾಗಿನ್ ಸ್ಥಿತಿ: DEMO Preview Mode (ಮಾದರಿ ಡೇಟಾ)",
+                card_total_students: "ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು / TOTAL",
+                card_boys_girls: "ಗಂಡು / ಹೆಣ್ಣು",
+                card_boys_perc: "ಗಂಡು ಮಕ್ಕಳ ಶೇಕಡಾವಾರು (% ಗಂಡು)",
+                card_girls_perc: "ಹೆಣ್ಣು ಮಕ್ಕಳ ಶೇಕಡಾವಾರು (% ಹೆಣ್ಣು)",
+                head_classwise_count: "ತರಗತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ (Classwise Count)",
+                head_category_stats: "ಪ್ರವರ್ಗವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ಸಂಖ್ಯೆ (Category Statistics)",
+                btn_login: "ಲಾಗಿನ್ (School Login)",
+                btn_activate: "ಸಕ್ರಿಯಗೊಳಿಸಿ / Activate (₹500)",
+                btn_promote: "ಪ್ರಮೋಟ್ ಮಾಡಿ",
+                btn_reset_data: "Reset Data",
+                head_select_class_sec: "ತರಗತಿ ಮತ್ತು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ (Select Class & Section)",
+                btn_excel_import: "Excel Auto-Import",
+                btn_export_data: "Export Student Data",
+                lbl_select_class: "ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ / Select Class",
+                lbl_select_section: "ವಿಭಾಗ / Select Section",
+                head_st_form: "ವಿದ್ಯಾರ್ಥಿ ವಿವರ ಸೇರ್ಪಡೆ/ತಿದ್ದುಪಡಿ ನಮೂನೆ",
+                lbl_adm_no: "ದಾಖಲಾತಿ ನಂ (Adm No)",
+                lbl_st_name: "ವಿದ್ಯಾರ್ಥಿ ಹೆಸರು (Student Name) *",
+                lbl_gender: "ಲಿಂಗ (Gender)",
+                lbl_dob: "ಜನನ ದಿನಾಂಕ (DOB)",
+                lbl_religion: "ಧರ್ಮ (Religion)",
+                lbl_social_cat: "ಸಾಮಾಜಿಕ ವರ್ಗ (Social Cat)",
+                lbl_caste: "ಜಾತಿ (Caste)",
+                lbl_st_aadhaar: "ವಿದ್ಯಾರ್ಥಿ ಆಧಾರ್ ಸಂಖ್ಯೆ",
+                lbl_f_aadhaar: "ತಂದೆಯ ಆಧಾರ್ ಸಂಖ್ಯೆ",
+                lbl_m_aadhaar: "ತಾಯಿಯ ಆಧಾರ್ ಸಂಖ್ಯೆ",
+                lbl_cwsn: "CWSN ಮಗುವೇ? (Special Needs)",
+                lbl_father: "ತಂದೆಯ ಹೆಸರು (Father Name)",
+                lbl_mother: "ತಾಯಿಯ ಹೆಸರು (Mother Name)",
+                lbl_mobile: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ (Mobile No)",
+                btn_save_st: "Save Student / ಉಳಿಸಿ",
+                head_st_directory: "ನೋಂದಾಯಿತ ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ / Student Directory",
+                head_marks_entry: "ಅಂಕಗಳ ನಮೂದು - ವಿಷಯ ಹಾಗೂ ತರಗತಿ ಆಯ್ಕೆ",
+                lbl_marks_class: "೧. ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ:",
+                lbl_marks_subject: "೨. ವಿಷಯ (Subject Column):",
+                lbl_active_subject: "ಪ್ರಸ್ತುತ ಅಂಕ ನಮೂದಿಸುತ್ತಿರುವ ವಿಷಯ:",
+                head_subjectwise_marks: "ವಿಷಯವಾರು ಅಂಕಗಳ ನಮೂದು (1st-8th Std)",
+                btn_print_exam_sheet: "Selected Exam Sheet Print",
+                head_co_scholastic: "ಸಹಪಠ್ಯ ವಿಷಯಗಳ ಶ್ರೇಣಿಗಳು & ICT (Computer Marks Entry)",
+                th_ict_marks: "ICT ಅಂಕ (100 ಕ್ಕೆ)",
+                th_ict_grade: "ICT ಶ್ರೇಣಿ",
+                th_tot_days: "ಶಾಲೆ ನಡೆದ ದಿನಗಳು",
+                th_att_days: "ಹಾಜರಿದ್ದ ದಿನಗಳು",
+                th_result: "ಫಲಿತಾಂಶ",
+                head_reports_module: "ವರದಿ ಮತ್ತು ಪ್ರಗತಿ ಪತ್ರಗಳ ಮುದ್ರಣ ಹಾಗೂ Share",
+                lbl_rpt_class: "ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ (Class Filter):",
+                lbl_rpt_student: "ವಿದ್ಯಾರ್ಥಿ ಆಯ್ಕೆ ಮಾಡಿ (Individual Progress Card):",
+                head_print_preview: "ಮುದ್ರಣ ಪೂರ್ವವೀಕ್ಷಣೆ (Print Preview)",
+                btn_wa_share: "WhatsApp Share Image",
+                btn_exp_pdf: "Export PDF",
+                btn_exp_excel: "Export Excel",
+                btn_print: "Print / ಮುದ್ರಿಸಿ"
+            },
+            en: {
+                banner_title: "Free Public Demo Mode",
+                banner_desc: "You are in demo mode. Login with Secret Key to manage real school data.",
+                label_academic_year: "Current Academic Year:",
+                label_login_status: "School Login Status: DEMO Preview Mode (Sample Data)",
+                card_total_students: "TOTAL STUDENTS",
+                card_boys_girls: "BOYS / GIRLS",
+                card_boys_perc: "BOYS PERCENTAGE (% BOYS)",
+                card_girls_perc: "GIRLS PERCENTAGE (% GIRLS)",
+                head_classwise_count: "Classwise Student Count",
+                head_category_stats: "Category Statistics",
+                btn_login: "School Login",
+                btn_activate: "Activate (₹500)",
+                btn_promote: "Promote Students",
+                btn_reset_data: "Reset Data",
+                head_select_class_sec: "Select Class & Section",
+                btn_excel_import: "Excel Auto-Import",
+                btn_export_data: "Export Student Data",
+                lbl_select_class: "Select Class",
+                lbl_select_section: "Select Section",
+                head_st_form: "Add / Edit Student Details Form",
+                lbl_adm_no: "Admission No",
+                lbl_st_name: "Student Name *",
+                lbl_gender: "Gender",
+                lbl_dob: "Date of Birth (DOB)",
+                lbl_religion: "Religion",
+                lbl_social_cat: "Social Category",
+                lbl_caste: "Caste",
+                lbl_st_aadhaar: "Student Aadhaar Number",
+                lbl_f_aadhaar: "Father Aadhaar Number",
+                lbl_m_aadhaar: "Mother Aadhaar Number",
+                lbl_cwsn: "CWSN Student? (Special Needs)",
+                lbl_father: "Father Name",
+                lbl_mother: "Mother Name",
+                lbl_mobile: "Mobile Number",
+                btn_save_st: "Save Student Details",
+                head_st_directory: "Registered Student Directory",
+                head_marks_entry: "Marks Entry - Select Class & Subject",
+                lbl_marks_class: "1. Select Class:",
+                lbl_marks_subject: "2. Subject Column:",
+                lbl_active_subject: "Currently Entering Marks For:",
+                head_subjectwise_marks: "Subject-wise Marks Entry (1st-8th Std)",
+                btn_print_exam_sheet: "Selected Exam Sheet Print",
+                head_co_scholastic: "Co-Scholastic Grades & ICT Marks Entry",
+                th_ict_marks: "ICT Marks (Out of 100)",
+                th_ict_grade: "ICT Grade",
+                th_tot_days: "Total Working Days",
+                th_att_days: "Days Attended",
+                th_result: "Result",
+                head_reports_module: "Reports & Progress Card Printing / Share",
+                lbl_rpt_class: "Select Class Filter:",
+                lbl_rpt_student: "Select Student (Progress Card):",
+                head_print_preview: "Print Preview",
+                btn_wa_share: "WhatsApp Share Image",
+                btn_exp_pdf: "Export PDF",
+                btn_exp_excel: "Export Excel",
+                btn_print: "Print Report"
+            }
+        };
+
+        // Merge extended translations into i18nDict
+        if (typeof i18nDict !== 'undefined') {
+            Object.assign(i18nDict.kn, extendedI18n.kn);
+            Object.assign(i18nDict.en, extendedI18n.en);
+        }
+
+        // Full UI Placeholders & Options Translation Overrider
+        function updateFormPlaceholders() {
+            const isEn = (currentLang === 'en');
+
+            const stAdmNo = document.getElementById('stAdmNo'); if (stAdmNo) stAdmNo.placeholder = isEn ? "Optional" : "ಖಾಲಿ ಬಿಡಬಹುದು";
+            const stName = document.getElementById('stName'); if (stName) stName.placeholder = isEn ? "Student Full Name" : "ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು";
+            const stReligion = document.getElementById('stReligion'); if (stReligion) stReligion.placeholder = isEn ? "Hindu / Muslim / Jain etc." : "ಹಿಂದೂ / ಮುಸ್ಲಿಂ / ಜೈನ";
+            const stCasteName = document.getElementById('stCasteName'); if (stCasteName) stCasteName.placeholder = isEn ? "Caste Name" : "ಲಿಂಗಾಯತ / ಕುರುಬ / ಇತ್ಯಾದಿ";
+            const stFather = document.getElementById('stFather'); if (stFather) stFather.placeholder = isEn ? "Father Name" : "ತಂದೆಯ ಹೆಸರು";
+            const stMother = document.getElementById('stMother'); if (stMother) stMother.placeholder = isEn ? "Mother Name" : "ತಾಯಿಯ ಹೆಸರು";
+            
+            const btnBulkDelete = document.getElementById('btnBulkDeleteStudents');
+            if (btnBulkDelete) btnBulkDelete.innerHTML = `<i class="fa-solid fa-trash-can me-1"></i> ${isEn ? 'Delete Selected' : 'ಆಯ್ಕೆಮಾಡಿದವರನ್ನು ಅಳಿಸಿ'}`;
+        }
+
+        // Language Switcher Override
+        const _baseSwitchLangFunc = switchAppLanguage;
+        switchAppLanguage = function(lang) {
+            if (typeof _baseSwitchLangFunc === 'function') {
+                _baseSwitchLangFunc(lang);
+            }
+            updateFormPlaceholders();
+            
+            // Re-render current broadsheets in selected language
+            const printCont = document.getElementById('printContainer');
+            if (printCont && printCont.innerHTML.trim() !== '') {
+                const activeBtn = document.querySelector('#reportsSection .btn-primary, #reportsSection .btn-warning, #reportsSection .btn-success, #reportsSection .btn-danger');
+                if (activeBtn) {
+                    if (activeBtn.innerText.includes('100')) renderCumulative100Broadsheet();
+                    else if (activeBtn.innerText.includes('9-Line')) renderDetailedSemesterBroadsheet();
+                    else if (activeBtn.innerText.includes('ಶಾಲಾ ಘೋಷವಾರು') || activeBtn.innerText.includes('School Abstract')) renderSchoolAbstractReport();
+                    else if (activeBtn.innerText.includes('ವಿಷಯವಾರು') || activeBtn.innerText.includes('Subject Abstract')) renderClassGradeAbstractReport();
+                    else renderIndividualReport();
+                }
+            }
+        };
+
+        // Fully Bilingual 9-Line Detailed Semester Broadsheet
+        renderDetailedSemesterBroadsheet = function() {
+            const selectedClass = getActiveReportClass();
+            const cat = getClassCategory(selectedClass);
+
+            if (cat === 'CLASS9' || cat === 'CLASS10') {
+                openConsolidatedResultRegister();
+                return;
+            }
+
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 landscape; margin: 4mm; }`;
+            const isLower = selectedClass.startsWith('1st') || selectedClass.startsWith('2nd') || selectedClass.startsWith('3rd') || selectedClass.startsWith('4th') || selectedClass.startsWith('5th');
+            const filtered = sampleStudents.filter(s => s.className === selectedClass);
+            const ctName = getCurrentClassTeacherName(selectedClass, 'A');
+
+            let subjects = isLower ? [
+                { id: 's1', name: t(getSubjectLabelWithLanguage('s1', 'ಪ್ರಥಮ ಭಾಷೆ'), 'First Language (Kannada)') },
+                { id: 's2', name: t(getSubjectLabelWithLanguage('s2', 'ದ್ವಿತೀಯ ಭಾಷೆ'), 'Second Language (English)') },
+                { id: 's4', name: t('ಗಣಿತ', 'Mathematics') },
+                { id: 's5', name: t('ಪರಿಸರ ಅಧ್ಯಯನ', 'Environmental Studies') }
+            ] : [
+                { id: 's1', name: t(getSubjectLabelWithLanguage('s1', 'ಪ್ರಥಮ ಭಾಷೆ'), 'First Language (Kannada)') },
+                { id: 's2', name: t(getSubjectLabelWithLanguage('s2', 'ದ್ವಿತೀಯ ಭಾಷೆ'), 'Second Language (English)') },
+                { id: 's3', name: t(getSubjectLabelWithLanguage('s3', 'ತೃತೀಯ ಭಾಷೆ'), 'Third Language (Hindi)') },
+                { id: 's6', name: t('ಸಮಾಜವಿಜ್ಞಾನ', 'Social Science') },
+                { id: 's5', name: t('ವಿಜ್ಞಾನ', 'Science') },
+                { id: 's4', name: t('ಗಣಿತ', 'Mathematics') },
+                { id: 's7', name: t('ದೈಹಿಕ/ಮೌಲ್ಯ ಶಿಕ್ಷಣ', 'Physical & Value Edu') }
+            ];
+
+            const evalRows = [
+                { type: 'fa1', label: t('ರೂ - 1', 'FA - 1'), perc: isLower ? '15%' : '10%' },
+                { type: 'fa2', label: t('ರೂ - 2', 'FA - 2'), perc: isLower ? '15%' : '10%' },
+                { type: 'sa1', label: t('ಸಂ - 1', 'SA - 1'), perc: isLower ? '20%' : '30%' },
+                { type: 'sem1Tot', label: t('ಒಟ್ಟು', 'Term 1 Total'), perc: '50%' },
+                { type: 'fa3', label: t('ರೂ - 3', 'FA - 3'), perc: isLower ? '15%' : '10%' },
+                { type: 'fa4', label: t('ರೂ - 4', 'FA - 4'), perc: isLower ? '15%' : '10%' },
+                { type: 'sa2', label: t('ಸಂ - 2', 'SA - 2'), perc: isLower ? '20%' : '30%' },
+                { type: 'sem2Tot', label: t('ಒಟ್ಟು', 'Term 2 Total'), perc: '50%' },
+                { type: 'grandTot', label: t('ಎಲ್ಲಾ ಒಟ್ಟು', 'Grand Total'), perc: '100%' }
+            ];
+
+            let tableHeaderHtml = `
+                <tr class="bg-light text-dark text-center">
+                    <th rowspan="2" class="align-middle">#</th>
+                    <th rowspan="2" class="vertical-text align-middle">SATS ID</th>
+                    <th rowspan="2" class="align-middle" style="min-width:120px;">${t('ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು', 'Student Name')}</th>
+                    <th rowspan="2" class="align-middle" style="min-width:70px;">${t('ಜನನ ದಿನಾಂಕ', 'DOB')}</th>
+                    <th rowspan="2" class="vertical-text align-middle">${t('ಸೆಮೆಸ್ಟರ್', 'Term')}</th>
+                    <th rowspan="2" class="align-middle">${t('ಮೌಲ್ಯಮಾಪನ', 'Evaluation')}</th>
+                    <th rowspan="2" class="vertical-text align-middle">${t('ಶೇಕಡಾ', 'Weightage %')}</th>
+                    ${subjects.map(sub => `<th colspan="2" class="align-middle">${sub.name}</th>`).join('')}
+                    <th colspan="3" class="align-middle">${t('ಒಟ್ಟು', 'Total')}</th>
+                    <th rowspan="2" class="vertical-text align-middle">${t('ಭಾವನಾತ್ಮಕ', 'Emotional')}</th>
+                    <th rowspan="2" class="vertical-text align-middle">${t('ಸಂಘಟನಾ', 'Organisational')}</th>
+                    <th rowspan="2" class="vertical-text align-middle">${t('ವೈಜ್ಞಾನಿಕ', 'Scientific')}</th>
+                    <th rowspan="2" class="vertical-text align-middle">${t('ಕಲಾ ಶಿಕ್ಷಣ', 'Art Edu')}</th>
+                    <th rowspan="2" class="vertical-text align-middle">${t('ಕಾರ್ಯಾನುಭವ', 'Work Exp')}</th>
+                    <th rowspan="2" class="vertical-text align-middle">${t('ಮನೋಧೋರಣೆ', 'Attitude')}</th>
+                    <th rowspan="2" class="vertical-text align-middle">${t('ಮೌಲ್ಯಗಳು', 'Values')}</th>
+                    <th rowspan="2" class="vertical-text align-middle bg-warning text-dark">${t('ಫಲಿತಾಂಶ', 'Result')}</th>
+                </tr>
+                <tr class="bg-light text-dark text-center">
+                    ${subjects.map(() => `<th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>`).join('')}
+                    <th>${t('ಅಂಕ', 'Marks')}</th><th>%</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                </tr>`;
+
+            let tableBodyHtml = filtered.map((s, idx) => {
+                const isCwsnExempt = s.cwsnStatus === 'Yes-Exempt';
+                const co = s.co || { c1:'B', c2:'B', c3:'B', c4:'B', c5:'B', c6:'B', c7:'B' };
+
+                if (isCwsnExempt) {
+                    return `
+                    <tr class="table-danger text-center align-middle">
+                        <td>${idx + 1}</td>
+                        <td class="fw-bold">${s.sats || '-'}</td>
+                        <td class="text-start ps-1 fw-bold align-middle">
+                            <div>${s.name} <span class="badge bg-danger ms-1">CWSN</span></div>
+                            <small class="text-muted d-block fs-8">${t('ದಾ.ಸಂ:', 'Adm No:')} ${s.admissionNo || '-'}</small>
+                        </td>
+                        <td class="align-middle fw-bold fs-8">${cleanDateFormat(s.dob)}</td>
+                        <td colspan="${subjects.length * 2 + 14}" class="fw-bold text-danger text-center align-middle fs-6">
+                            CWSN (Exam Exempted)
+                        </td>
+                    </tr>`;
+                }
+
+                let totalGrandScore = 0;
+                let maxGrandScore = subjects.length * 100;
+                subjects.forEach(sub => { totalGrandScore += calculateSubjectScores(s.marks[sub.id] || {}, false, s.className).subjectGrandTot; });
+                
+                const overallPerc = maxGrandScore > 0 ? (totalGrandScore / maxGrandScore) * 100 : 0;
+                let resultText = overallPerc >= 35 ? t("ಉತ್ತೀರ್ಣ", "PASSED") : t("ಅನುತ್ತೀರ್ಣ", "FAILED");
+
+                return evalRows.map((r, rIdx) => {
+                    let rowTotalMarks = 0, rowMaxMarks = 0;
+                    let subjectCellsHtml = subjects.map(sub => {
+                        const calc = calculateSubjectScores(s.marks[sub.id] || {}, false, s.className);
+                        let val = 0, max = 10;
+                        if (r.type === 'fa1') { val = calc.cFA1; max = isLower ? 15 : 10; }
+                        else if (r.type === 'fa2') { val = calc.cFA2; max = isLower ? 15 : 10; }
+                        else if (r.type === 'sa1') { val = calc.cSA1; max = isLower ? 20 : 30; }
+                        else if (r.type === 'sem1Tot') { val = calc.t1Tot; max = 50; }
+                        else if (r.type === 'fa3') { val = calc.cFA3; max = isLower ? 15 : 10; }
+                        else if (r.type === 'fa4') { val = calc.cFA4; max = isLower ? 15 : 10; }
+                        else if (r.type === 'sa2') { val = calc.cSA2; max = isLower ? 20 : 30; }
+                        else if (r.type === 'sem2Tot') { val = calc.t2Tot; max = 50; }
+                        else if (r.type === 'grandTot') { val = calc.subjectGrandTot; max = 100; }
+
+                        rowTotalMarks += val; rowMaxMarks += max;
+                        return `<td>${val}</td><td class="fw-bold">${getGradeFromScore(val, max, calc.hasMarks)}</td>`;
+                    }).join('');
+
+                    const rowPerc = (rowMaxMarks > 0 ? ((rowTotalMarks / rowMaxMarks) * 100).toFixed(0) + '%' : '0%');
+                    const rowGrade = getGradeFromScore(rowTotalMarks, rowMaxMarks, true);
+                    const displayTotal = rowTotalMarks;
+
+                    if (rIdx === 0) {
+                        return `
+                        <tr>
+                            <td rowspan="9">${idx + 1}</td><td rowspan="9" class="vertical-text fw-bold">${s.sats || '-'}</td>
+                            <td rowspan="9" class="text-start ps-1 fw-bold align-middle">
+                                <div>${s.name}</div>
+                                <small class="text-muted d-block fs-8">${t('ದಾ.ಸಂ:', 'Adm No:')} ${s.admissionNo || '-'}</small>
+                            </td>
+                            <td rowspan="9" class="align-middle fw-semibold fs-8">${cleanDateFormat(s.dob)}</td>
+                            <td rowspan="4" class="fw-bold">${t('1ನೇ', 'Term 1')}</td><td class="fw-bold">${r.label}</td><td>${r.perc}</td>
+                            ${subjectCellsHtml}
+                            <td class="fw-bold">${displayTotal}</td><td>${rowPerc}</td><td class="fw-bold">${rowGrade}</td>
+                            <td rowspan="4" class="fw-bold">${co.c1}</td><td rowspan="4" class="fw-bold">${co.c2}</td>
+                            <td rowspan="4" class="fw-bold">${co.c3}</td><td rowspan="4" class="fw-bold">${co.c4}</td>
+                            <td rowspan="4" class="fw-bold">${co.c5}</td><td rowspan="4" class="fw-bold">${co.c6}</td>
+                            <td rowspan="4" class="fw-bold">${co.c7}</td>
+                            <td rowspan="9" class="fw-bold ${resultText.includes('FAILED')||resultText.includes('ಅನುತ್ತೀರ್ಣ')?'text-danger':'text-success'} align-middle vertical-text fs-7">${resultText}</td>
+                        </tr>`;
+                    } else if (rIdx === 4) {
+                        return `
+                        <tr>
+                            <td rowspan="4" class="fw-bold">${t('2ನೇ', 'Term 2')}</td><td class="fw-bold">${r.label}</td><td>${r.perc}</td>
+                            ${subjectCellsHtml}
+                            <td class="fw-bold">${displayTotal}</td><td>${rowPerc}</td><td class="fw-bold">${rowGrade}</td>
+                            <td rowspan="4" class="fw-bold">${co.c1}</td><td rowspan="4" class="fw-bold">${co.c2}</td>
+                            <td rowspan="4" class="fw-bold">${co.c3}</td><td rowspan="4" class="fw-bold">${co.c4}</td>
+                            <td rowspan="4" class="fw-bold">${co.c5}</td><td rowspan="4" class="fw-bold">${co.c6}</td>
+                            <td rowspan="4" class="fw-bold">${co.c7}</td>
+                        </tr>`;
+                    } else if (rIdx === 8) {
+                        return `
+                        <tr class="table-warning fw-bold">
+                            <td>${t('ಎಲ್ಲಾ', 'All')}</td><td>${r.label}</td><td>${r.perc}</td>
+                            ${subjectCellsHtml}
+                            <td>${displayTotal}</td><td>${rowPerc}</td><td>${rowGrade}</td>
+                            <td>${co.c1}</td><td>${co.c2}</td><td>${co.c3}</td><td>${co.c4}</td><td>${co.c5}</td><td>${co.c6}</td><td>${co.c7}</td>
+                        </tr>`;
+                    } else {
+                        return `
+                        <tr ${r.type.includes('Tot')?'class="bg-light fw-bold"':''}>
+                            <td class="fw-bold">${r.label}</td><td>${r.perc}</td>
+                            ${subjectCellsHtml}
+                            <td class="fw-bold">${displayTotal}</td><td>${rowPerc}</td><td class="fw-bold">${rowGrade}</td>
+                        </tr>`;
+                    }
+                }).join('');
+            }).join('');
+
+            document.getElementById('printContainer').innerHTML = `
+                <div class="text-center mb-2" style="font-family: 'Anek Kannada', 'Poppins', sans-serif;">
+                    <div class="fw-bold fs-6">${t(`ಕ್ಷೇತ್ರ ಶಿಕ್ಷಣಾಧಿಕಾರಿಗಳ ಕಾರ್ಯಾಲಯ ${appSettings.block}`, `Office of the Block Education Officer ${appSettings.block}`)}</div>
+                    <div class="report-school-name fs-4 fw-bold text-primary my-1">${appSettings.schoolName}</div>
+                    <div class="fw-bold text-dark fs-7">${appSettings.academicYear} ${t('ನೇ ಸಾಲಿನ ವಿವರವಾದ CCE ತ್ರೈಮಾಸಿಕ Broadsheet - ತರಗತಿ:', 'Detailed CCE Quarterly Broadsheet - Class:')} ${selectedClass}</div>
+                </div>
+                <table class="cce-broadsheet-table mb-3 w-100" id="broadsheetTableToExport">
+                    <thead>${tableHeaderHtml}</thead>
+                    <tbody>${tableBodyHtml}</tbody>
+                </table>
+                <div class="d-flex justify-content-between pt-4 mt-3 fs-8 fw-bold">
+                    <div>${t('ವರ್ಗ ಶಿಕ್ಷಕರ ಸಹಿ', 'Class Teacher Signature')}<br><small>${ctName}</small></div>
+                    <div>${t('ಸಮೂಹ ಸಂಪನ್ಮೂಲ ವ್ಯಕ್ತಿಯ ಸಹಿ', 'Cluster Resource Person Signature')}</div>
+                    <div>${t('ಮುಖ್ಯ ಶಿಕ್ಷಕರ ಸಹಿ &amp; ಮೊಹರು', 'Headmaster Signature &amp; Seal')}<br><small>${appSettings.hmName}</small></div>
+                </div>`;
+        }
+        
         
     </script>
 </body>
