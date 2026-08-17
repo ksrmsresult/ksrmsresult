@@ -8183,7 +8183,72 @@
                     <div>${t('ಮುಖ್ಯ ಶಿಕ್ಷಕರ ಸಹಿ &amp; ಮೊಹರು', 'Headmaster Signature &amp; Seal')}<br><small>${appSettings.hmName}</small></div>
                 </div>`;
         };
-        
+
+        // ----------------------------------------------------------------------
+        // MARKS ENTRY SUBJECT DROPDOWN & INDICATOR BILINGUAL TRANSLATOR
+        // ----------------------------------------------------------------------
+        function getEnglishSubjectLabel(key) {
+            const lMap = appSettings.languageMap || { s1: 'Kannada', s2: 'English', s3: 'Hindi' };
+            if (key === 's1') return `First Language (${lMap.s1 || 'Kannada'})`;
+            if (key === 's2') return `Second Language (${lMap.s2 || 'English'})`;
+            if (key === 's3') return `Third Language (${lMap.s3 || 'Hindi'})`;
+            if (key === 's4') return 'Mathematics';
+            if (key === 's5') return 'Science / EVS';
+            if (key === 's6') return 'Social Science';
+            if (key === 's7') return 'Physical & Value Education';
+            return 'First Language';
+        }
+
+        function updateMarksEntrySubjectLabels() {
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            const select = document.getElementById('selectedSubjectSelect');
+            if (!select) return;
+
+            const currentVal = select.value || 's1';
+
+            const optionsData = [
+                { val: 's1', kn: 'ಪ್ರಥಮ ಭಾಷೆ (First Language)', en: 'First Language' },
+                { val: 's2', kn: 'ದ್ವಿತೀಯ ಭಾಷೆ (Second Language)', en: 'Second Language' },
+                { val: 's3', kn: 'ತೃತೀಯ ಭಾಷೆ (Third Language)', en: 'Third Language' },
+                { val: 's4', kn: 'ಗಣಿತ (Mathematics)', en: 'Mathematics' },
+                { val: 's5', kn: 'ವಿಜ್ಞಾನ / ಪರಿಸರ ಅಧ್ಯಯನ (Science/EVS)', en: 'Science / EVS' },
+                { val: 's6', kn: 'ಸಮಾಜ ವಿಜ್ಞಾನ (Social Science)', en: 'Social Science' },
+                { id: 's7', val: 's7', kn: 'ದೈಹಿಕ ಶಿಕ್ಷಣ / ಮೌಲ್ಯ ಶಿಕ್ಷಣ (Physical / Value Education)', en: 'Physical & Value Education' }
+            ];
+
+            select.innerHTML = optionsData.map(opt => `
+                <option value="${opt.val}" ${opt.val === currentVal ? 'selected' : ''}>
+                    ${isEn ? opt.en : opt.kn}
+                </option>
+            `).join('');
+
+            const activeIndicator = document.getElementById('activeSubjectIndicator');
+            if (activeIndicator) {
+                if (isEn) {
+                    activeIndicator.innerText = getEnglishSubjectLabel(currentVal);
+                } else {
+                    activeIndicator.innerText = getSubjectLabelWithLanguage(currentVal, optionsData.find(o => o.val === currentVal)?.kn || 'ಪ್ರಥಮ ಭಾಷೆ');
+                }
+            }
+        }
+
+        // Language Switcher Hook to update Subject Labels in Marks Entry
+        if (typeof switchAppLanguage === 'function') {
+            const _prevSwitchLang = switchAppLanguage;
+            switchAppLanguage = function(lang) {
+                _prevSwitchLang(lang);
+                updateMarksEntrySubjectLabels();
+            };
+        }
+
+        // Subject Change Router Hook
+        if (typeof handleSubjectChangeGridRouter === 'function') {
+            const _prevGridRouter = handleSubjectChangeGridRouter;
+            handleSubjectChangeGridRouter = function() {
+                updateMarksEntrySubjectLabels();
+                _prevGridRouter();
+            };
+        }
         
     </script>
 </body>
