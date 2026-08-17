@@ -6698,7 +6698,67 @@
             };
         }
 
+// ----------------------------------------------------------------------
+        // SAVED SCHOOL SETTINGS AUTO-LOAD & PERSISTENCE FIX
+        // ----------------------------------------------------------------------
+        function loadSchoolSettings() {
+            if (document.getElementById('cfgSchoolName')) document.getElementById('cfgSchoolName').value = appSettings.schoolName || '';
+            if (document.getElementById('cfgDiseCode')) document.getElementById('cfgDiseCode').value = appSettings.diseCode || '';
+            if (document.getElementById('cfgAcademicYear')) document.getElementById('cfgAcademicYear').value = appSettings.academicYear || '2026-27';
+            if (document.getElementById('cfgClassRange')) document.getElementById('cfgClassRange').value = appSettings.classRange || '1-10';
+            if (document.getElementById('cfgCluster')) document.getElementById('cfgCluster').value = appSettings.cluster || '';
+            if (document.getElementById('cfgBlock')) document.getElementById('cfgBlock').value = appSettings.block || '';
+            if (document.getElementById('cfgDistrict')) document.getElementById('cfgDistrict').value = appSettings.district || '';
+            if (document.getElementById('cfgHMName')) document.getElementById('cfgHMName').value = appSettings.hmName || '';
 
+            if (appSettings.hmSigUrl && document.getElementById('hmSigPreview')) {
+                document.getElementById('hmSigPreview').src = appSettings.hmSigUrl;
+            }
+
+            if (typeof loadClassTeacherSettings === 'function') {
+                loadClassTeacherSettings();
+            }
+        }
+
+        // Full save settings overrider to preserve all fields
+        saveSchoolSettings = function() {
+            if (!checkLicensePermission("save settings")) return;
+
+            appSettings.schoolName = document.getElementById('cfgSchoolName').value.trim();
+            appSettings.diseCode = document.getElementById('cfgDiseCode').value.trim();
+            appSettings.classRange = document.getElementById('cfgClassRange').value;
+            appSettings.hmName = document.getElementById('cfgHMName').value.trim();
+            appSettings.cluster = document.getElementById('cfgCluster').value.trim();
+            appSettings.block = document.getElementById('cfgBlock').value.trim();
+            appSettings.district = document.getElementById('cfgDistrict').value.trim();
+
+            const newYear = document.getElementById('cfgAcademicYear').value.trim();
+            if (newYear) {
+                updateAcademicYearGlobal(newYear);
+            }
+
+            const cls = document.getElementById('cfgCTClassSelect').value;
+            const sec = document.getElementById('cfgCTSectionSelect').value;
+            const key = `${cls}-${sec}`;
+            if (!classTeachersMap[key]) classTeachersMap[key] = { name: '', sigUrl: '' };
+            classTeachersMap[key].name = document.getElementById('cfgCTName').value.trim();
+
+            syncSchoolDataToCloud();
+            renderDashboardTables();
+            alert('ಶಾಲೆಯ ಸಾರ್ವತ್ರಿಕ ವಿವರಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ!');
+        };
+
+        // Override showSection to automatically load saved settings when Settings tab opens
+        if (typeof showSection === 'function') {
+            const _origShowSection = showSection;
+            showSection = function(sectionId, btn) {
+                _origShowSection(sectionId, btn);
+                if (sectionId === 'settingsSection') {
+                    loadSchoolSettings();
+                }
+            };
+        }
+        
     </script>
 </body>
 </html>
