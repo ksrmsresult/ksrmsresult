@@ -8249,6 +8249,74 @@
                 _prevGridRouter();
             };
         }
+
+// ----------------------------------------------------------------------
+        // CO-SCHOLASTIC GRID HEADERS BILINGUAL TRANSLATOR (KANNADA & ENGLISH)
+        // ----------------------------------------------------------------------
+        renderCoGrid = function() {
+            const selectedClass = document.getElementById('filterClassMarks') ? document.getElementById('filterClassMarks').value : window.ksrmsState.activeClass;
+            const tbody = document.getElementById('coGridBody');
+            if (!tbody) return;
+
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            const currentWorkingDays = appSettings.totalWorkingDays || 239;
+
+            // Co-Scholastic Header Translation
+            const coTable = document.querySelector('#coGridBody')?.closest('table');
+            if (coTable) {
+                const thead = coTable.querySelector('thead');
+                if (thead) {
+                    thead.innerHTML = `
+                        <tr class="table-dark text-center align-middle">
+                            <th>#</th>
+                            <th>${t('ವಿದ್ಯಾರ್ಥಿ ಹೆಸರು', 'Student Name')}</th>
+                            <th>${t('ಭಾವನಾತ್ಮಕ &amp; ಸಾಮಾಜಿಕ / ದೈಹಿಕ ಶಿಕ್ಷಣ', 'Emotional &amp; Social / Physical Edu')}</th>
+                            <th>${t('ಸಂಘಟನಾ ಕೌಶಲ / ಮೌಲ್ಯ ಶಿಕ್ಷಣ', 'Organisational Skills / Value Edu')}</th>
+                            <th>${t('ವೈಜ್ಞಾನಿಕ ಕೌಶಲ / ಕಾರ್ಯಾನುಭವ', 'Scientific Skills / Work Exp')}</th>
+                            <th>${t('ಲಲಿತ ಕಲೆ/ಕಲಾ ಶಿಕ್ಷಣ/Drawing', 'Art Education / Drawing')}</th>
+                            <th>${t('ಸೃಜನಶೀಲತೆ', 'Creativity')}</th>
+                            <th>${t('ಮನೋಧೋರಣೆ', 'Attitude')}</th>
+                            <th>${t('ಮೌಲ್ಯಗಳು', 'Values')}</th>
+                            <th class="bg-primary text-white">${t('ICT ಅಂಕ (100 ಕ್ಕೆ)', 'ICT Marks (Out of 100)')}</th>
+                            <th class="bg-primary text-white">${t('ICT ಶ್ರೇಣಿ', 'ICT Grade')}</th>
+                            <th>${t('ಶಾಲೆ ನಡೆದ ದಿನಗಳು', 'Total Working Days')}<br><input type="number" class="mark-input text-primary fw-bold mt-1" style="width:58px; background:#fff; border:2px solid #800020;" value="${currentWorkingDays}" onchange="updateGlobalWorkingDays(this.value)" title="${t('ಇಲ್ಲಿ ದಿನ ಬದಲಾಯಿಸಿದರೆ ಎಲ್ಲಾ ಮಕ್ಕಳಿಗೂ ಆಟೋ ಅಪ್ಡೇಟ್ ಆಗುತ್ತದೆ', 'Change here to auto-update for all students')}"></th>
+                            <th>${t('ಹಾಜರಿದ್ದ ದಿನಗಳು', 'Days Attended')}</th>
+                            <th>${t('ಫಲಿತಾಂಶ', 'Result')}</th>
+                        </tr>`;
+                }
+            }
+
+            const filtered = selectedClass === 'ALL' ? sampleStudents : sampleStudents.filter(s => s.className === selectedClass);
+
+            tbody.innerHTML = filtered.map((s, idx) => {
+                const isCwsnExempt = s.cwsnStatus === 'Yes-Exempt';
+                const c = s.co || { c1:'B', c2:'B', c3:'B', c4:'B', c5:'B', c6:'B', c7:'B', ict: 75, attDays:205, res:'ಉತ್ತೀರ್ಣ' };
+                const ictGrade = isCwsnExempt ? 'CWSN' : getGradeFromScore(c.ict, 100, c.ict !== undefined);
+
+                let resDisp = isCwsnExempt ? 'CWSN' : (c.res || 'ಉತ್ತೀರ್ಣ');
+                if (isEn && !isCwsnExempt) {
+                    resDisp = (c.res === 'ಅನುತ್ತೀರ್ಣ' || c.res === 'FAILED') ? 'FAILED' : 'PASSED';
+                }
+
+                return `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td class="text-start fw-bold">${s.name} ${isCwsnExempt ? '<span class="badge bg-danger">CWSN</span>':''}</td>
+                    <td>${renderGradeDropdown(s.id, 'c1', c.c1)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c2', c.c2)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c3', c.c3)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c4', c.c4)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c5', c.c5)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c6', c.c6)}</td>
+                    <td>${renderGradeDropdown(s.id, 'c7', c.c7)}</td>
+                    <td><input type="text" class="mark-input" value="${isCwsnExempt ? 'CWSN' : (c.ict!==undefined?c.ict:'')}" ${isCwsnExempt?'disabled':''} onchange="updateCoGrade('${s.id}', 'ict', this.value)"></td>
+                    <td><span class="badge bg-primary">${ictGrade}</span></td>
+                    <td><input type="number" class="mark-input fw-bold text-primary" style="width:58px;" value="${currentWorkingDays}" onchange="updateGlobalWorkingDays(this.value)" title="${t('ಇಲ್ಲಿ ಬದಲಾಯಿಸಿದರೆ ಎಲ್ಲಾ ಮಕ್ಕಳಿಗೂ ಆಟೋ ಅಪ್ಡೇಟ್ ಆಗುತ್ತದೆ', 'Change here to auto-update for all students')}"></td>
+                    <td><input type="number" class="mark-input" value="${c.attDays||205}" onchange="updateCoGrade('${s.id}', 'attDays', this.value)"></td>
+                    <td class="fw-bold ${isCwsnExempt?'text-danger':(resDisp==='FAILED'?'text-danger':'text-success')}">${resDisp}</td>
+                </tr>`;
+            }).join('');
+        };
         
     </script>
 </body>
