@@ -8317,6 +8317,53 @@
                 </tr>`;
             }).join('');
         };
+
+        // ----------------------------------------------------------------------
+        // MOBILE LANGUAGE TRANSLATOR BUTTON FIX (ALWAYS VISIBLE ON MOBILE)
+        // ----------------------------------------------------------------------
+        (function enableMobileLanguageSwitcher() {
+            function injectMobileLangBtn() {
+                // 1. Inject Language Toggle Button into Mobile Top Header Bar
+                const navContainer = document.querySelector('nav .container-fluid');
+                const mobileAdminBtn = document.getElementById('mobileTopAdminBtn') || document.querySelector('.navbar-toggler');
+                
+                if (navContainer && mobileAdminBtn && !document.getElementById('mobileTopLangBtn')) {
+                    const topLangBtn = document.createElement('button');
+                    topLangBtn.id = 'mobileTopLangBtn';
+                    topLangBtn.className = 'btn btn-outline-light btn-sm fw-bold d-xl-none ms-auto me-2 no-print shadow-sm';
+                    topLangBtn.onclick = function(e) {
+                        e.preventDefault();
+                        const newLang = (typeof currentLang !== 'undefined' && currentLang === 'kn') ? 'en' : 'kn';
+                        switchAppLanguage(newLang);
+                        this.innerHTML = `<i class="fa-solid fa-language text-warning me-1"></i> ${newLang === 'kn' ? 'ಕನ್ನಡ' : 'English'}`;
+                    };
+                    topLangBtn.innerHTML = `<i class="fa-solid fa-language text-warning me-1"></i> ${(typeof currentLang !== 'undefined' && currentLang === 'kn') ? 'ಕನ್ನಡ' : 'English'}`;
+                    
+                    navContainer.insertBefore(topLangBtn, mobileAdminBtn);
+                }
+
+                // 2. Inject Language Selector Bar inside Mobile Dropdown Menu
+                const navUl = document.querySelector('#ksrmsNavbar .navbar-nav');
+                if (navUl && !document.getElementById('mobileLangNavItem')) {
+                    const langLi = document.createElement('li');
+                    langLi.id = 'mobileLangNavItem';
+                    langLi.className = 'nav-item d-xl-none my-2 text-center border-top pt-2 border-secondary';
+                    langLi.innerHTML = `
+                        <div class="d-flex justify-content-center align-items-center gap-2">
+                            <span class="text-light fw-bold fs-8"><i class="fa-solid fa-language text-warning me-1"></i> Language / ಭಾಷೆ:</span>
+                            <button class="btn btn-sm ${(typeof currentLang !== 'undefined' && currentLang==='kn')?'btn-warning text-dark':'btn-outline-light'} fw-bold px-3 py-1" onclick="switchAppLanguage('kn'); document.getElementById('mobileTopLangBtn').innerHTML='<i class=\\'fa-solid fa-language text-warning me-1\\'></i> ಕನ್ನಡ';">ಕನ್ನಡ</button>
+                            <button class="btn btn-sm ${(typeof currentLang !== 'undefined' && currentLang==='en')?'btn-warning text-dark':'btn-outline-light'} fw-bold px-3 py-1" onclick="switchAppLanguage('en'); document.getElementById('mobileTopLangBtn').innerHTML='<i class=\\'fa-solid fa-language text-warning me-1\\'></i> English';">English</button>
+                        </div>`;
+                    navUl.insertBefore(langLi, navUl.firstChild);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', injectMobileLangBtn);
+            } else {
+                injectMobileLangBtn();
+            }
+        })();
         
     </script>
 </body>
