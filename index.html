@@ -10858,6 +10858,185 @@
 
             if (container) container.scrollIntoView({ behavior: 'smooth' });
         };
+
+// ----------------------------------------------------------------------
+        // HIGH SCHOOL (9th & 10th) SINGLE-SUBJECT FA/SA EXAM SHEET HEADER FIX
+        // ----------------------------------------------------------------------
+        const _origRenderExamSheetReportFunc = renderExamSheetReportAndPrint;
+        renderExamSheetReportAndPrint = function() {
+            let selectedClass = getActiveReportClass();
+            const cat = getClassCategory(selectedClass);
+
+            // If High School (9th / 10th) and in SINGLE_SUBJECT mode
+            if ((cat === 'CLASS9' || cat === 'CLASS10') && examReportMode === 'SINGLE_SUBJECT') {
+                if (!checkLicensePermission("print exam result sheet")) return;
+
+                let examFilter = 'FA1';
+                const rptExamEl = document.getElementById('rptExamSelect');
+                const marksExamEl = document.getElementById('examPrintFilter');
+                if (rptExamEl && rptExamEl.value) examFilter = rptExamEl.value;
+                else if (marksExamEl && marksExamEl.value) examFilter = marksExamEl.value;
+
+                const filtered = sampleStudents.filter(s => s.className === selectedClass);
+                const ctName = getCurrentClassTeacherName(selectedClass, 'A');
+
+                const subKey = document.getElementById('selectedSubjectSelect') ? document.getElementById('selectedSubjectSelect').value : 's1';
+                let activeSubName = document.getElementById('selectedSubjectSelect') ? document.getElementById('selectedSubjectSelect').options[document.getElementById('selectedSubjectSelect').selectedIndex].text : 'First Language';
+                activeSubName = getSubjectLabelWithLanguage(subKey, activeSubName);
+
+                const isClass10 = (cat === 'CLASS10');
+                const isFL125 = (subKey === 's1' && isClass10);
+                const maxSubMarks = isFL125 ? 125 : 100;
+
+                let examTitle = "";
+                let isFaExam = examFilter.startsWith('FA');
+
+                switch(examFilter) {
+                    case 'FA1': examTitle = "FA-1 (ರೂಪಣಾತ್ಮಕ - 1)"; break;
+                    case 'FA2': examTitle = "FA-2 (ರೂಪಣಾತ್ಮಕ - 2)"; break;
+                    case 'SA1': examTitle = "SA-1 (ಸಂಕಲನಾತ್ಮಕ/Preparatory - 1)"; break;
+                    case 'FA3': examTitle = "FA-3 (ರೂಪಣಾತ್ಮಕ - 3)"; break;
+                    case 'FA4': examTitle = "FA-4 (ರೂಪಣಾತ್ಮಕ - 4)"; break;
+                    case 'SA2': examTitle = "SA-2 (ಸಂಕಲನಾತ್ಮಕ/Preparatory - 2)"; break;
+                    default: examTitle = `${examFilter} ಪರೀಕ್ಷೆ`;
+                }
+
+                document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 portrait; margin: 5mm; }`;
+
+                let tableHeaderHtml = "";
+                let tableRowsHtml = "";
+
+                if (isFaExam) {
+                    // FA Exam (5 Sub-columns: Act1, Act2, Written, Total 50, Grade)
+                    tableHeaderHtml = `
+                        <tr class="bg-light text-dark text-center fs-8 border-dark">
+                            <th rowspan="2" class="align-middle" style="width: 40px;">#</th>
+                            <th rowspan="2" class="align-middle" style="width: 120px;">SATS ID</th>
+                            <th rowspan="2" class="align-middle" style="min-width: 180px;">ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
+                            <th colspan="5" class="align-middle">${activeSubName} - ${examTitle}</th>
+                        </tr>
+                        <tr class="bg-light text-dark text-center fs-8 border-dark">
+                            <th>ಚಟುವಟಿಕೆ 1 (15)</th>
+                            <th>ಚಟುವಟಿಕೆ 2 (15)</th>
+                            <th>ಲಿಖಿತ ಪರೀಕ್ಷೆ (20)</th>
+                            <th class="bg-warning bg-opacity-25 text-dark">ಒಟ್ಟು (50)</th>
+                            <th>ಶ್ರೇಣಿ</th>
+                        </tr>`;
+
+                    tableRowsHtml = filtered.map((s, idx) => {
+                        const isCwsnExempt = s.cwsnStatus === 'Yes-Exempt';
+                        if (isCwsnExempt) {
+                            return `<tr class="table-danger text-center align-middle"><td>${idx+1}</td><td>${s.sats||'-'}</td><td class="text-start fw-bold ps-2">${s.name} <span class="badge bg-danger ms-1">CWSN</span></td><td colspan="5" class="fw-bold text-danger">CWSN (ವಿನಾಯಿತಿ)</td></tr>`;
+                        }
+
+                        const mObj = (s.hsMarks && s.hsMarks[subKey]) ? s.hsMarks[subKey] : createBlankHighSchoolSubjectMarks(subKey);
+                        const testKey = examFilter.toLowerCase(); // fa1, fa2, fa3, fa4
+                        const testData = mObj[testKey] || { act1: "", act2: "", written: "" };
+
+                        const a1 = testData.act1 !== "" ? Number(testData.act1) : "-";
+                        const a2 = testData.act2 !== "" ? Number(testData.act2) : "-";
+                        const wr = testData.written !== "" ? Number(testData.written) : "-";
+
+                        const hasAny = (a1 !== "-" || a2 !== "-" || wr !== "-");
+                        const tot = hasAny ? ((a1 !== "-" ? a1 : 0) + (a2 !== "-" ? a2 : 0) + (wr !== "-" ? wr : 0)) : "-";
+                        const grade = hasAny ? calculateHighSchoolGrade(tot, 50) : "-";
+
+                        return `
+                            <tr class="text-center align-middle fs-8">
+                                <td>${idx + 1}</td>
+                                <td>${s.sats || '-'}</td>
+                                <td class="text-start fw-bold ps-2">${s.name}</td>
+                                <td>${a1}</td>
+                                <td>${a2}</td>
+                                <td>${wr}</td>
+                                <td class="fw-bold text-primary bg-light">${tot}</td>
+                                <td><span class="badge ${grade !== '-' ? 'bg-success' : 'bg-secondary'}">${grade}</span></td>
+                            </tr>`;
+                    }).join('');
+
+                } else {
+                    // SA Exam / Preparatory (2 Sub-columns: Score 100, Grade)
+                    tableHeaderHtml = `
+                        <tr class="bg-light text-dark text-center fs-8 border-dark">
+                            <th rowspan="2" class="align-middle" style="width: 40px;">#</th>
+                            <th rowspan="2" class="align-middle" style="width: 120px;">SATS ID</th>
+                            <th rowspan="2" class="align-middle" style="min-width: 180px;">ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
+                            <th colspan="2" class="align-middle">${activeSubName} - ${examTitle}</th>
+                        </tr>
+                        <tr class="bg-light text-center fs-8 border-dark">
+                            <th>ಅಂಕಗಳು (100)</th>
+                            <th>ಶ್ರೇಣಿ</th>
+                        </tr>`;
+
+                    tableRowsHtml = filtered.map((s, idx) => {
+                        const isCwsnExempt = s.cwsnStatus === 'Yes-Exempt';
+                        if (isCwsnExempt) {
+                            return `<tr class="table-danger text-center align-middle"><td>${idx+1}</td><td>${s.sats||'-'}</td><td class="text-start fw-bold ps-2">${s.name} <span class="badge bg-danger ms-1">CWSN</span></td><td colspan="2" class="fw-bold text-danger">CWSN (ವಿನಾಯಿತಿ)</td></tr>`;
+                        }
+
+                        const mObj = (s.hsMarks && s.hsMarks[subKey]) ? s.hsMarks[subKey] : createBlankHighSchoolSubjectMarks(subKey);
+                        const testKey = examFilter.toLowerCase(); // sa1, sa2
+                        const prepRaw = (mObj[testKey] && mObj[testKey].preparatory100 !== "") ? Number(mObj[testKey].preparatory100) : "-";
+                        const grade = prepRaw !== "-" ? calculateHighSchoolGrade(prepRaw, 100) : "-";
+
+                        return `
+                            <tr class="text-center align-middle fs-8">
+                                <td>${idx + 1}</td>
+                                <td>${s.sats || '-'}</td>
+                                <td class="text-start fw-bold ps-2">${s.name}</td>
+                                <td class="fw-bold text-primary fs-7">${prepRaw}</td>
+                                <td><span class="badge ${prepRaw !== '-' ? 'bg-success' : 'bg-secondary'}">${grade}</span></td>
+                            </tr>`;
+                    }).join('');
+                }
+
+                const container = document.getElementById('printContainer');
+                if (!container) return;
+
+                container.innerHTML = `
+                    <div class="p-2 mx-auto" style="font-family: 'Anek Kannada', sans-serif; max-width: 200mm;">
+                        <div class="d-flex justify-content-center gap-2 mb-3 no-print">
+                            <button class="btn btn-sm ${examReportMode==='ALL_SUBJECTS'?'btn-primary':'btn-outline-primary'} fw-bold" onclick="setExamReportMode('ALL_SUBJECTS')">
+                                <i class="fa-solid fa-table-list me-1"></i> ಎಲ್ಲಾ ವಿಷಯಗಳ ${examFilter} ಶೀಟ್ (Landscape)
+                            </button>
+                            <button class="btn btn-sm ${examReportMode==='SINGLE_SUBJECT'?'btn-primary':'btn-outline-primary'} fw-bold" onclick="setExamReportMode('SINGLE_SUBJECT')">
+                                <i class="fa-solid fa-book-bookmark me-1"></i> ${activeSubName} (${examFilter}) ಶೀಟ್ ಮಾತ್ರ (Portrait)
+                            </button>
+                        </div>
+
+                        <div class="text-center mb-3">
+                            <div class="fw-bold fs-6">ಸಾರ್ವಜನಿಕ ಶಿಕ್ಷಣ ಇಲಾಖೆ -ಕರ್ನಾಟಕ ಸರ್ಕಾರ</div>
+                            <div class="report-school-name fs-4 fw-bold text-primary my-1">${appSettings.schoolName}</div>
+                            <div class="fw-bold text-dark fs-6 bg-light d-inline-block px-3 py-1 border rounded">
+                                ಶೈಕ್ಷಣಿಕ ವರ್ಷ: ${appSettings.academicYear} | <strong>${activeSubName} - ${examTitle}</strong> | ತರಗತಿ: ${selectedClass}
+                            </div>
+                        </div>
+
+                        <table class="cce-broadsheet-table mb-3 w-100" id="broadsheetTableToExport">
+                            <thead>${tableHeaderHtml}</thead>
+                            <tbody>
+                                ${tableRowsHtml.length > 0 ? tableRowsHtml : `<tr><td colspan="10" class="p-3 text-muted">ಈ ತರಗತಿಯಲ್ಲಿ ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಗಳಿಲ್ಲ.</td></tr>`}
+                            </tbody>
+                        </table>
+
+                        <div class="d-flex justify-content-between pt-4 mt-4 fs-8 fw-bold">
+                            <div>ವಿಷಯ ಶಿಕ್ಷಕರ ಸಹಿ (${activeSubName})<br>______________________</div>
+                            <div>ವರ್ಗ ಶಿಕ್ಷಕರ ಸಹಿ<br><small>${ctName}</small></div>
+                            <div>ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಹಿ &amp; ಮೊಹರು<br><small>${appSettings.hmName}</small></div>
+                        </div>
+                    </div>`;
+
+                document.querySelectorAll('.content-section').forEach(sec => sec.classList.add('d-none'));
+                document.getElementById('reportsSection').classList.remove('d-none');
+                document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+                const rptNavBtn = document.querySelectorAll('.nav-tab-btn')[4];
+                if (rptNavBtn) rptNavBtn.classList.add('active');
+
+                if (container) container.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                _origRenderExamSheetReportFunc();
+            }
+        };
         
     </script>
 </body>
