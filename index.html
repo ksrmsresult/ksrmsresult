@@ -8558,6 +8558,148 @@
                 </tr>
             `).join('');
         };
+
+// ----------------------------------------------------------------------
+        // STRICT ACADEMIC YEAR ISOLATION FIX (PREVENTS DOUBLE COUNTING)
+        // ----------------------------------------------------------------------
+        function getActiveYearStudents() {
+            const activeYear = appSettings.academicYear || '2026-27';
+            return sampleStudents.filter(s => {
+                const sYear = s.academicYear || '2026-27';
+                return sYear === activeYear;
+            });
+        }
+
+        // Full Override for Dashboard to ONLY count active year's students
+        renderDashboardTables = function() {
+            const students = getActiveYearStudents(); // Filters ONLY current academic year students
+            const totalCount = students.length;
+
+            const isGirlStrict = s => {
+                const g = String(s?.gender || '').trim().toLowerCase();
+                return ['girl', 'female', 'f', 'ಹೆಣ್ಣು', 'ಹೆ', 'g'].includes(g);
+            };
+
+            const isBoyStrict = s => {
+                const g = String(s?.gender || '').trim().toLowerCase();
+                return ['boy', 'male', 'm', 'ಗಂಡು', 'ಗಂ', 'b'].includes(g) || (!isGirlStrict(s) && g !== '');
+            };
+
+            const totalGirls = students.filter(isGirlStrict).length;
+            const totalBoys = students.filter(isBoyStrict).length;
+
+            const boysPercStr = totalCount > 0 ? ((totalBoys / totalCount) * 100).toFixed(1) + '%' : '0.0%';
+            const girlsPercStr = totalCount > 0 ? ((totalGirls / totalCount) * 100).toFixed(1) + '%' : '0.0%';
+
+            const elTot = document.getElementById('dashTotalStudents');
+            const elBg = document.getElementById('dashBoysGirlsCount');
+            const elBp = document.getElementById('dashBoysPerc');
+            const elGp = document.getElementById('dashGirlsPerc');
+
+            if (elTot) elTot.innerText = totalCount;
+            if (elBg) elBg.innerText = `${totalBoys} / ${totalGirls}`;
+            if (elBp) elBp.innerText = boysPercStr;
+            if (elGp) elGp.innerText = girlsPercStr;
+
+            const activeClasses = getClassesInSelectedRange();
+
+            // 1. Classwise Count Table (Active Academic Year Only)
+            const classBody = document.getElementById('dashClasswiseTableBody');
+            if (classBody) {
+                let classHtml = "";
+                activeClasses.forEach(cls => {
+                    const normCls = normalizeClassName(cls);
+                    const filtered = students.filter(s => s && normalizeClassName(s.className).startsWith(normCls));
+                    const f = filtered.filter(isGirlStrict).length;
+                    const m = filtered.length - f;
+                    const tot = filtered.length;
+
+                    classHtml += `
+                        <tr>
+                            <td class="fw-bold">${cls}</td>
+                            <td class="text-primary fw-bold">${m}</td>
+                            <td class="text-danger fw-bold">${f}</td>
+                            <td class="fw-bold bg-light">${tot}</td>
+                        </tr>`;
+                });
+                classBody.innerHTML = classHtml;
+            }
+
+            // 2. Category Statistics Table (Active Academic Year Only)
+            const catBody = document.getElementById('dashCategoryTableBody');
+            if (catBody) {
+                let catHtml = "";
+
+                let totScM = 0, totScF = 0;
+                let totStM = 0, totStF = 0;
+                let totGmM = 0, totGmF = 0;
+                let totObcM = 0, totObcF = 0;
+
+                activeClasses.forEach(cls => {
+                    const normCls = normalizeClassName(cls);
+                    const filtered = students.filter(s => s && normalizeClassName(s.className).startsWith(normCls));
+
+                    const scList = filtered.filter(s => getCategoryGroup(s.casteCat) === 'SC');
+                    const scT = scList.length;
+                    const scF = scList.filter(isGirlStrict).length;
+                    const scM = scT - scF;
+
+                    const stList = filtered.filter(s => getCategoryGroup(s.casteCat) === 'ST');
+                    const stT = stList.length;
+                    const stF = stList.filter(isGirlStrict).length;
+                    const stM = stT - stF;
+
+                    const gmList = filtered.filter(s => getCategoryGroup(s.casteCat) === 'GM');
+                    const gmT = gmList.length;
+                    const gmF = gmList.filter(isGirlStrict).length;
+                    const gmM = gmT - gmF;
+
+                    const obcList = filtered.filter(s => getCategoryGroup(s.casteCat) === 'OBC');
+                    const obcT = obcList.length;
+                    const obcF = obcList.filter(isGirlStrict).length;
+                    const obcM = obcT - obcF;
+
+                    const grandM = scM + stM + gmM + obcM;
+                    const grandF = scF + stF + gmF + obcF;
+                    const grandT = filtered.length;
+
+                    totScM += scM; totScF += scF;
+                    totStM += stM; totStF += stF;
+                    totGmM += gmM; totGmF += gmF;
+                    totObcM += obcM; totObcF += obcF;
+
+                    catHtml += `
+                        <tr>
+                            <td class="fw-bold">${cls}</td>
+                            <td>${scM}</td><td>${scF}</td><td class="fw-bold">${scT}</td>
+                            <td>${stM}</td><td>${stF}</td><td class="fw-bold">${stT}</td>
+                            <td>${gmM}</td><td>${gmF}</td><td class="fw-bold">${gmT}</td>
+                            <td>${obcM}</td><td>${obcF}</td><td class="fw-bold">${obcT}</td>
+                            <td class="bg-warning text-dark fw-bold">${grandM}</td>
+                            <td class="bg-warning text-dark fw-bold">${grandF}</td>
+                            <td class="bg-warning text-dark fw-bold">${grandT}</td>
+                        </tr>`;
+                });
+
+                const totGrandM = totScM + totStM + totGmM + totObcM;
+                const totGrandF = totScF + totStF + totGmF + totObcF;
+                const totGrandT = students.length;
+
+                catHtml += `
+                    <tr class="table-dark fw-bold">
+                        <td>Total</td>
+                        <td>${totScM}</td><td>${totScF}</td><td>${totScM + totScF}</td>
+                        <td>${totStM}</td><td>${totStF}</td><td>${totStM + totStF}</td>
+                        <td>${totGmM}</td><td>${totGmF}</td><td>${totGmM + totGmF}</td>
+                        <td>${totObcM}</td><td>${totObcF}</td><td>${totObcM + totObcF}</td>
+                        <td class="bg-warning text-dark">${totGrandM}</td>
+                        <td class="bg-warning text-dark">${totGrandF}</td>
+                        <td class="bg-warning text-dark">${totGrandT}</td>
+                    </tr>`;
+
+                catBody.innerHTML = catHtml;
+            }
+        };
         
     </script>
 </body>
