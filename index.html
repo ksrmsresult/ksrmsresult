@@ -8730,6 +8730,74 @@
                 renderDashboardTables();
             };
         }
+
+// ----------------------------------------------------------------------
+        // FIX FOR LOGIN MODAL TAB HIDING & STUDENT DATABASE TABLE FILTERING
+        // ----------------------------------------------------------------------
+        
+        // 1. Hide Admin Login Tab in Login Modal for Public Users
+        openLoginModal = function() {
+            if (!loginModalInstance) return;
+
+            const schoolTabBtn = document.getElementById('school-tab');
+            if (schoolTabBtn) {
+                const tab = new bootstrap.Tab(schoolTabBtn);
+                tab.show();
+            }
+
+            // Hide Admin tab header from general users
+            const adminTabHeader = document.getElementById('admin-tab');
+            if (adminTabHeader) {
+                adminTabHeader.style.display = (currentSession.role === 'admin') ? 'block' : 'none';
+            }
+
+            loginModalInstance.show();
+        };
+
+        // 2. Student Directory Table Filter Fix
+        renderStudentTable = function() {
+            const selectedClass = document.getElementById('regClassSelect')?.value || '6th Standard';
+            const tbody = document.getElementById('studentTableBody');
+            if (!tbody) return;
+
+            const normCls = normalizeClassName(selectedClass);
+
+            // Lenient matching for class names (e.g. 6th Standard / 6th Standard-A)
+            const filtered = sampleStudents.filter(s => s && normalizeClassName(s.className).startsWith(normCls));
+
+            const stBadge = document.getElementById('stCountBadge');
+            if (stBadge) stBadge.innerText = `${filtered.length} Students`;
+
+            // Auto-update Dashboard Table Stats
+            renderDashboardTables();
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="14" class="text-center p-3 text-muted">ಈ ತರಗತಿಯಲ್ಲಿ (${selectedClass}) ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಗಳಿಲ್ಲ. ಬಲಬದಿಯ 'Excel Auto-Import' ಅಥವಾ 'Save Student' ಮೂಲಕ ಮಕ್ಕಳನ್ನು ಸೇರಿಸಿ.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((s, idx) => `
+                <tr>
+                    <td><input type="checkbox" class="st-select-check" value="${s.id}"></td>
+                    <td>${idx + 1}</td>
+                    <td class="fw-bold">${s.admissionNo || '-'}</td>
+                    <td class="fw-bold text-start ps-2">${s.name}</td>
+                    <td>${s.gender === 'Boy' ? (currentLang==='kn'?'ಗಂಡು':'Male') : s.gender === 'Girl' ? (currentLang==='kn'?'ಹೆಣ್ಣು':'Female') : '-'}</td>
+                    <td>${cleanDateFormat(s.dob)}</td>
+                    <td>${s.sats || '-'}</td>
+                    <td>${s.pen || '-'}</td>
+                    <td>${s.casteCat || '-'}${s.casteName ? ` (${s.casteName})` : ''}</td>
+                    <td>${s.cwsnStatus && s.cwsnStatus.startsWith('Yes') ? `<span class="badge bg-danger">CWSN</span>` : `<span class="badge bg-light text-dark border">No</span>`}</td>
+                    <td>${s.father || extractFatherFromFullName(s.name) || '-'}</td>
+                    <td>${s.mother || '-'}</td>
+                    <td>${s.mobile || '-'}</td>
+                    <td>
+                        <button class="btn btn-xs btn-outline-primary py-0 px-2 me-1 fw-bold" onclick="editStudent('${s.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn btn-xs btn-outline-danger py-0 px-1" onclick="deleteStudent('${s.id}')"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
         
     </script>
 </body>
