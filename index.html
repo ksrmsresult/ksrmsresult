@@ -10421,6 +10421,52 @@
 
             debouncedCloudSync();
         };
+
+        // ----------------------------------------------------------------------
+        // HIGH SCHOOL MARKS ENTRY GRID COMPACTNESS & RIGHT-EDGE FIT FIX
+        // ----------------------------------------------------------------------
+        (function fixHighSchoolGridOverflow() {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'hsGridCompactFixStyle';
+            styleEl.innerHTML = `
+                /* Compact High School Grid Inputs to fit all 34 columns */
+                #highSchoolMarksGridTable {
+                    table-layout: auto !important;
+                    width: 100% !important;
+                }
+
+                #highSchoolMarksGridTable th,
+                #highSchoolMarksGridTable td {
+                    padding: 2px 1px !important;
+                    font-size: 0.72rem !important;
+                    vertical-align: middle !important;
+                }
+
+                #highSchoolMarksGridTable .mark-input.hs-input {
+                    width: 35px !important;
+                    padding: 1px 0px !important;
+                    font-size: 0.75rem !important;
+                    text-align: center !important;
+                }
+
+                #highSchoolMarksGridTable .mark-input[data-test="sa1"],
+                #highSchoolMarksGridTable .mark-input[data-test="sa2"] {
+                    width: 42px !important;
+                }
+
+                /* Smooth Horizontal Scrollbar for 9th & 10th Grid */
+                #highSchoolMarksContainer .table-responsive {
+                    overflow-x: auto !important;
+                    -webkit-overflow-scrolling: touch !important;
+                    border: 1px solid #dee2e6;
+                    border-radius: 4px;
+                }
+            `;
+
+            if (!document.getElementById('hsGridCompactFixStyle')) {
+                document.head.appendChild(styleEl);
+            }
+        })();
         
     </script>
 </body>
