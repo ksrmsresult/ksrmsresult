@@ -11151,7 +11151,242 @@
             debouncedCloudSync();
         }
 
-      
+      // ----------------------------------------------------------------------
+        // HIGH SCHOOL SA1/SA2 100 MARKS & TEACHER REGISTER 'UNDEFINED' FIX
+        // ----------------------------------------------------------------------
+        function calculateSubjectFinalMarks(subId, marksObj, className) {
+            if (!marksObj) {
+                marksObj = createBlankHighSchoolSubjectMarks(subId);
+            }
+
+            const cat = getClassCategory(className);
+            const isClass10 = (cat === 'CLASS10');
+            const isFL = (subId === 's1');
+
+            const isFL125 = (isFL && isClass10);
+            const maxMarks = isFL125 ? 125 : 100;
+            const passMin = isFL125 ? 44 : 35;
+
+            // FA1, FA2, FA3, FA4 Totals (Max 50 each)
+            const fa1Tot = (parseFloat(marksObj.fa1?.act1) || 0) + (parseFloat(marksObj.fa1?.act2) || 0) + (parseFloat(marksObj.fa1?.written) || 0);
+            const fa2Tot = (parseFloat(marksObj.fa2?.act1) || 0) + (parseFloat(marksObj.fa2?.act2) || 0) + (parseFloat(marksObj.fa2?.written) || 0);
+            const fa3Tot = (parseFloat(marksObj.fa3?.act1) || 0) + (parseFloat(marksObj.fa3?.act2) || 0) + (parseFloat(marksObj.fa3?.written) || 0);
+            const fa4Tot = (parseFloat(marksObj.fa4?.act1) || 0) + (parseFloat(marksObj.fa4?.act2) || 0) + (parseFloat(marksObj.fa4?.written) || 0);
+
+            // Internal FA Weightage (20 Marks for Core/2nd/3rd Lang, 25 Marks for 10th FL)
+            const internalMax = isFL125 ? 25 : 20;
+            const fa1_2_internal = Math.round((((fa1Tot + fa2Tot) / 100) * internalMax) * 10) / 10;
+            const fa3_4_internal = Math.round((((fa3Tot + fa4Tot) / 100) * internalMax) * 10) / 10;
+
+            // SA1 & SA2 Written Exam Inputs (80 Marks for Core/2nd/3rd Lang, 100 Marks for 10th FL)
+            const sa1Written = parseFloat(marksObj.sa1?.preparatory100) || 0;
+            const sa2Written = parseFloat(marksObj.sa2?.preparatory100) || 0;
+
+            // SA1 Total = Written + Internal FA = 80 + 20 = 100 Marks!
+            const sa1Total = Math.min(maxMarks, Math.round(sa1Written + fa1_2_internal));
+            const sa2Total = Math.min(maxMarks, Math.round(sa2Written + fa3_4_internal));
+
+            // Grand Total
+            const grandTotal = Math.round((sa1Total + sa2Total) / 2);
+            const grade = calculateHighSchoolGrade(grandTotal, maxMarks);
+            const pass = grandTotal >= passMin;
+
+            return {
+                fa1Tot, fa2Tot, fa3Tot, fa4Tot,
+                fa1_2_internal,
+                fa3_4_internal,
+                sa1Converted: fa1_2_internal, // Fixes undefined in Teacher Register!
+                sa2Converted: fa3_4_internal, // Fixes undefined in Teacher Register!
+                sa1Written,
+                sa2Written,
+                sa1Total,
+                sa2Total,
+                grandTotal,
+                grade,
+                pass
+            };
+        }
+
+        // High School Inline Grid Updater Override
+        function updateHighSchoolMarkInline(inputEl, studentId) {
+            if (!checkLicensePermission("enter high school marks")) {
+                inputEl.value = '';
+                return;
+            }
+
+            const st = sampleStudents.find(s => String(s.id) === String(studentId));
+            if (!st) return;
+
+            const subKey = inputEl.getAttribute('data-sub');
+            const testKey = inputEl.getAttribute('data-test');
+            const fieldKey = inputEl.getAttribute('data-field');
+
+            if (!st.hsMarks) st.hsMarks = {};
+            if (!st.hsMarks[subKey]) st.hsMarks[subKey] = createBlankHighSchoolSubjectMarks(subKey);
+
+            let val = inputEl.value;
+            const maxVal = parseFloat(inputEl.getAttribute('max')) || 100;
+            if (val !== "" && parseFloat(val) > maxVal) {
+                val = maxVal;
+                inputEl.value = maxVal;
+            }
+
+            st.hsMarks[subKey][testKey][fieldKey] = val !== "" ? parseFloat(val) : "";
+
+            const calc = calculateSubjectFinalMarks(subKey, st.hsMarks[subKey], st.className);
+            const row = inputEl.closest('tr');
+
+            if (row) {
+                const fa1Tot = row.querySelector('.col-fa1-tot'); if (fa1Tot) fa1Tot.innerText = calc.fa1Tot;
+                const fa2Tot = row.querySelector('.col-fa2-tot'); if (fa2Tot) fa2Tot.innerText = calc.fa2Tot;
+                const fa3Tot = row.querySelector('.col-fa3-tot'); if (fa3Tot) fa3Tot.innerText = calc.fa3Tot;
+                const fa4Tot = row.querySelector('.col-fa4-tot'); if (fa4Tot) fa4Tot.innerText = calc.fa4Tot;
+
+                const sa1Conv = row.querySelector('.col-sa1-conv'); if (sa1Conv) sa1Conv.innerText = calc.fa1_2_internal;
+                const sa1Tot = row.querySelector('.col-sa1-tot'); if (sa1Tot) sa1Tot.innerText = calc.sa1Total;
+
+                const sa2Conv = row.querySelector('.col-sa2-conv'); if (sa2Conv) sa2Conv.innerText = calc.fa3_4_internal;
+                const sa2Tot = row.querySelector('.col-sa2-tot'); if (sa2Tot) sa2Tot.innerText = calc.sa2Total;
+
+                const grandTot = row.querySelector('.col-grand-tot'); if (grandTot) grandTot.innerText = calc.grandTotal;
+
+                const gradeEl = row.querySelector('.col-grade');
+                if (gradeEl) {
+                    gradeEl.innerText = calc.grade;
+                    gradeEl.className = `badge ${calc.pass ? 'bg-success' : 'bg-danger'} col-grade`;
+                }
+
+                const statusEl = row.querySelector('.col-status');
+                if (statusEl) {
+                    statusEl.innerText = calc.pass ? 'Pass' : 'Fail';
+                    statusEl.className = `fw-bold ${calc.pass ? 'text-success' : 'text-danger'} col-status`;
+                }
+            }
+
+            debouncedCloudSync();
+        }
+
+        // High School Teacher Subject Register Report Fix
+        function renderTeacherIndividualRegisterHTML(className, subKey) {
+            const cat = getClassCategory(className);
+
+            if (cat === 'PRIMARY') {
+                renderExamSheetReportAndPrint();
+                return;
+            }
+
+            const isClass10 = (cat === 'CLASS10');
+            const isFL125 = (subKey === 's1' && isClass10);
+            const maxSubMarks = isFL125 ? 125 : 100;
+            const writtenMax = isFL125 ? 100 : 80;
+            const internalMax = isFL125 ? 25 : 20;
+
+            let subText = document.getElementById('selectedSubjectSelect') ? document.getElementById('selectedSubjectSelect').options[document.getElementById('selectedSubjectSelect').selectedIndex].text : "Subject";
+            subText = getSubjectLabelWithLanguage(subKey, subText);
+
+            const ctName = getCurrentClassTeacherName(className, 'A');
+            const filteredStudents = sampleStudents.filter(s => s.className === className);
+
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 landscape; margin: 4mm; }`;
+
+            let rowsHtml = filteredStudents.map((s, idx) => {
+                const m = (s.hsMarks && s.hsMarks[subKey]) ? s.hsMarks[subKey] : createBlankHighSchoolSubjectMarks(subKey);
+                const calc = calculateSubjectFinalMarks(subKey, m, className);
+
+                const co = s.co || { c1:'A', c2:'A', c3:'A', c4:'A' };
+
+                return `
+                    <tr class="text-center align-middle fs-8">
+                        <td>${idx + 1}</td>
+                        <td class="fw-bold">${s.admissionNo || '-'}</td>
+                        <td class="fw-bold text-start ps-2">${s.name}</td>
+                        <td>${s.sats || '-'}</td>
+
+                        <td>${m.fa1?.act1 || 0}</td><td>${m.fa1?.act2 || 0}</td><td>${m.fa1?.written || 0}</td><td class="fw-bold bg-light">${calc.fa1Tot}</td>
+                        <td>${m.fa2?.act1 || 0}</td><td>${m.fa2?.act2 || 0}</td><td>${m.fa2?.written || 0}</td><td class="fw-bold bg-light">${calc.fa2Tot}</td>
+                        <td class="fw-bold bg-warning bg-opacity-10">${calc.fa1Tot + calc.fa2Tot}</td>
+                        <td>${m.sa1?.preparatory100 || 0}</td><td class="fw-bold text-primary">${calc.fa1_2_internal}</td>
+
+                        <td>${m.fa3?.act1 || 0}</td><td>${m.fa3?.act2 || 0}</td><td>${m.fa3?.written || 0}</td><td class="fw-bold bg-light">${calc.fa3Tot}</td>
+                        <td>${m.fa4?.act1 || 0}</td><td>${m.fa4?.act2 || 0}</td><td>${m.fa4?.written || 0}</td><td class="fw-bold bg-light">${calc.fa4Tot}</td>
+                        <td class="fw-bold bg-warning bg-opacity-10">${calc.fa3Tot + calc.fa4Tot}</td>
+                        <td>${m.sa2?.preparatory100 || 0}</td><td class="fw-bold text-primary">${calc.fa3_4_internal}</td>
+
+                        <td class="fw-bold text-dark fs-7 bg-success bg-opacity-10">${calc.grandTotal}</td>
+                        <td><span class="badge ${calc.pass ? 'bg-success' : 'bg-danger'}">${calc.grade}</span></td>
+                        <td class="fw-bold">${co.c1 || 'A'}</td>
+                        <td class="fw-bold">${co.c4 || 'A'}</td>
+                        <td class="fw-bold ${calc.pass ? 'text-success' : 'text-danger'}">${calc.pass ? 'Pass' : 'Fail'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const container = document.getElementById('printContainer');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="teacher-register-paper p-2" style="font-family: 'Anek Kannada', sans-serif;">
+                    <div class="text-center mb-2">
+                        <div class="fw-bold fs-6">ಕರ್ನಾಟಕ ಸರ್ಕಾರ - ಸಾರ್ವಜನಿಕ ಶಿಕ್ಷಣ ಇಲಾಖೆ</div>
+                        <div class="fw-bold text-primary fs-5 report-school-name">${appSettings.schoolName}</div>
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-1 px-3 fs-8 fw-bold">
+                            <span>ತಾಲೂಕು/ಬ್ಲಾಕ್: ${appSettings.block}</span>
+                            <span class="fs-6 text-danger">${appSettings.academicYear} - ಶಿಕ್ಷಕರ ವಿಷಯವಾರೂ ಅಂಕಗಳ ರಜಿಸ್ಟರ್ (Teacher Subject Register)</span>
+                            <span>ತರಗತಿ: ${className} | ವಿಷಯ: ${subText} (Max: ${maxSubMarks})</span>
+                        </div>
+                    </div>
+
+                    <table class="cce-broadsheet-table w-100 mb-3" id="broadsheetTableToExport" style="font-size: 0.72rem;">
+                        <thead>
+                            <tr class="bg-dark text-white text-center">
+                                <th rowspan="3" class="align-middle">#</th>
+                                <th rowspan="3" class="align-middle">ದಾ.ಸಂ</th>
+                                <th rowspan="3" class="align-middle" style="min-width: 140px;">ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
+                                <th rowspan="3" class="align-middle">SATS ಸಂಖ್ಯೆ</th>
+
+                                <th colspan="9" class="bg-primary text-white">ಪ್ರಥಮ ಸೆಮಿಸ್ಟರ್ (Term 1)</th>
+                                <th colspan="9" class="bg-secondary text-white">ದ್ವಿತೀಯ ಸೆಮಿಸ್ಟರ್ (Term 2)</th>
+                                <th colspan="3" class="bg-success text-white">ವಾರ್ಷಿಕ ಒಟ್ಟು</th>
+                                <th colspan="2">ಸಹಪಠ್ಯ</th>
+                                <th rowspan="3" class="align-middle">ಫಲಿತಾಂಶ</th>
+                            </tr>
+                            <tr class="bg-light text-center">
+                                <th colspan="4">FA-1 (50)</th>
+                                <th colspan="4">FA-2 (50)</th>
+                                <th rowspan="2" class="align-middle bg-warning bg-opacity-25">FA1+FA2<br>(100)</th>
+                                <th colspan="2">SA-1</th>
+
+                                <th colspan="4">FA-3 (50)</th>
+                                <th colspan="4">FA-4 (50)</th>
+                                <th rowspan="2" class="align-middle bg-warning bg-opacity-25">FA3+FA4<br>(100)</th>
+                                <th colspan="2">SA-2</th>
+
+                                <th rowspan="2" class="align-middle bg-success bg-opacity-10">ಅಂಕಗಳು<br>(${maxSubMarks})</th>
+                                <th rowspan="2" class="align-middle">ಶ್ರೇಣಿ</th>
+                                <th rowspan="2" class="align-middle">ದೈ.ಶಿ</th>
+                                <th rowspan="2" class="align-middle">ಕಲಾ.ಶಿ</th>
+                            </tr>
+                            <tr class="bg-light text-center">
+                                <th>A1(15)</th><th>A2(15)</th><th>Wr(20)</th><th>Tot</th>
+                                <th>A1(15)</th><th>A2(15)</th><th>Wr(20)</th><th>Tot</th>
+                                <th>Raw(${writtenMax})</th><th>Conv(${internalMax})</th>
+
+                                <th>A1(15)</th><th>A2(15)</th><th>Wr(20)</th><th>Tot</th>
+                                <th>A1(15)</th><th>A2(15)</th><th>Wr(20)</th><th>Tot</th>
+                                <th>Raw(${writtenMax})</th><th>Conv(${internalMax})</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+
+                    <div class="d-flex justify-content-between pt-4 mt-3 fs-8 fw-bold">
+                        <div class="text-center"><div>______________________</div><div>ವಿಷಯ ಶಿಕ್ಷಕರ ಸಹಿ (${subText})</div></div>
+                        <div class="text-center"><div>______________________</div><div>ವರ್ಗ ಶಿಕ್ಷಕರ ಸಹಿ</div><small>${ctName}</small></div>
+                        <div class="text-center"><div>______________________</div><div>ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಹಿ &amp; ಮೊಹರು</div><small>${appSettings.hmName}</small></div>
+                    </div>
+                </div>
+            `;
+        }
         
     </script>
 </body>
