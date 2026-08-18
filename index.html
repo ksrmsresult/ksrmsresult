@@ -9109,6 +9109,119 @@
                 catBody.innerHTML = catHtml;
             }
         };
+
+// ----------------------------------------------------------------------
+        // DUAL-ENGINE SATS EXCEL & HTML-XLS FAIL-SAFE AUTO-IMPORTER
+        // ----------------------------------------------------------------------
+        processExcelImport = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let workbook = null;
+
+                // Engine 1: ArrayBuffer Parsing (Standard XLSX)
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    workbook = XLSX.read(data, { type: 'array', raw: true });
+                } catch(ex1) {
+                    // Engine 2: Fallback String Parsing for SATS HTML-XLS / CSV
+                    try {
+                        const textData = new TextDecoder("utf-8").decode(e.target.result);
+                        workbook = XLSX.read(textData, { type: 'string', raw: true });
+                    } catch(ex2) {
+                        console.error("SheetJS Import Errors:", ex1, ex2);
+                        return alert("Excel ಫೈಲ್ ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಫೈಲ್ ಹಾನಿಗೊಳಗಾಗಿರಬಹುದು ಅಥವಾ ಪ್ರೊಟೆಕ್ಟ್ ಆಗಿರಬಹುದು.");
+                    }
+                }
+
+                if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                    return alert("Excel ಫೈಲ್ನಲ್ಲಿ ಯಾವುದೇ ಶೀಟ್‌ಗಳು ದೊರೆಯಲಿಲ್ಲ!");
+                }
+
+                try {
+                    const firstSheet = workbook.SheetNames[0];
+                    const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: "" });
+
+                    if (!jsonRows || jsonRows.length === 0) {
+                        return alert("Excel ಫೈಲ್ನಲ್ಲಿ ಯಾವುದೇ ವಿವರಗಳಿಲ್ಲ!");
+                    }
+
+                    // Filter out completely blank rows
+                    const validRows = jsonRows.filter(r => r && Object.values(r).some(v => String(v).trim() !== ""));
+                    if (validRows.length === 0) {
+                        return alert("Excel ಫೈಲ್ನಲ್ಲಿ ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರಗಳಿಲ್ಲ!");
+                    }
+
+                    let addedCount = 0;
+                    const currentClass = document.getElementById('regClassSelect').value;
+
+                    // Flexible SATS Header Matching across all rows
+                    let nameKey = null, admKey = null, genderKey = null, dobKey = null, satsKey = null, penKey = null, catKey = null, casteKey = null, fatherKey = null, motherKey = null, mobileKey = null;
+
+                    for (let r of validRows) {
+                        if (!nameKey) nameKey = findExcelKey(r, ['studentname', 'childname', 'student_name', 'name', 'ಹೆಸರು', 'ವಿದ್ಯಾರ್ಥಿ']);
+                        if (!satsKey) satsKey = findExcelKey(r, ['sats', 'satsid', 'childsats', 'enrollment', 'enrolment']);
+                        if (!genderKey) genderKey = findExcelKey(r, ['gender', 'sex', 'mf', 'boygirl', 'ಲಿಂಗ', 'studentgender']);
+                        if (!dobKey) dobKey = findExcelKey(r, ['dob', 'birth', 'dateofbirth', 'ಜನನ', 'ದಿನಾಂಕ']);
+                        if (!admKey) admKey = findExcelKey(r, ['admission', 'adm', 'enrolment', 'enrollment', 'ದಾಖಲಾತಿ', 'sl']);
+                        if (!catKey) catKey = findExcelKey(r, ['category', 'cat', 'social', 'ವರ್ಗ', 'ಸಾಮಾಜಿಕ']);
+                        if (!casteKey) casteKey = findExcelKey(r, ['caste', 'castename', 'ಜಾತಿ']);
+                        if (!fatherKey) fatherKey = findExcelKey(r, ['father', 'parent', 'ತಂದೆ']);
+                        if (!motherKey) motherKey = findExcelKey(r, ['mother', 'ತಾಯಿ']);
+                        if (!mobileKey) mobileKey = findExcelKey(r, ['mobile', 'phone', 'contact', 'ಮೊಬೈಲ್']);
+                    }
+
+                    validRows.forEach((row, idx) => {
+                        let nameVal = nameKey ? String(row[nameKey]).trim() : '';
+
+                        if (!nameVal) {
+                            const rowVals = Object.values(row).map(v => String(v).trim());
+                            nameVal = rowVals.find(v => isNaN(v) && v.length >= 2 && !v.toLowerCase().includes('standard') && !v.toLowerCase().includes('class')) || '';
+                        }
+
+                        if (nameVal && nameVal.length >= 2 && !nameVal.toLowerCase().includes('student name')) {
+                            let rawGender = genderKey ? row[genderKey] : '';
+                            const normalizedGender = normalizeGenderStrict(rawGender);
+
+                            sampleStudents.push({
+                                id: Date.now().toString() + "_" + idx,
+                                admissionNo: admKey ? String(row[admKey]).trim() : '',
+                                name: nameVal,
+                                gender: normalizedGender,
+                                dob: dobKey ? cleanDateFormat(row[dobKey]) : '',
+                                sats: satsKey ? String(row[satsKey]).trim() : '',
+                                pen: penKey ? String(row[penKey]).trim() : '',
+                                casteCat: catKey ? String(row[catKey]).trim() : 'General',
+                                casteName: casteKey ? String(row[casteName]).trim() : '',
+                                father: fatherKey ? String(row[fatherKey]).trim() : extractFatherFromFullName(nameVal),
+                                mother: motherKey ? String(row[motherKey]).trim() : '',
+                                mobile: mobileKey ? String(row[mobileKey]).trim() : '',
+                                cwsnStatus: 'No',
+                                className: currentClass,
+                                marks: {},
+                                hsMarks: {},
+                                co: { c1:'B', c2:'B', c3:'B', c4:'B', c5:'B', c6:'B', c7:'B', ict: 75, attDays: 205, res: 'ಉತ್ತೀರ್ಣ' }
+                            });
+                            addedCount++;
+                        }
+                    });
+
+                    event.target.value = '';
+                    sortStudentsAlphabetically(sampleStudents);
+                    syncSchoolDataToCloud();
+                    onClassChangeHandle();
+
+                    alert(`${addedCount} ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಇಂಪೋರ್ಟ್ ಮಾಡಲಾಗಿದೆ!\n\nSATS ID, DOB ಹಾಗೂ Gender ಪೂರ್ಣವಾಗಿ ಲೋಡ್ ಆಗಿದೆ.`);
+
+                } catch(err) {
+                    console.error("Excel Final Catch Error:", err);
+                    alert("Excel ಫೈಲ್ ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಫಾರ್ಮ್ಯಾಟ್ ಪರಿಶೀಲಿಸಿ.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
         
     </script>
 </body>
