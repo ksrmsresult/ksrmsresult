@@ -9743,6 +9743,90 @@
                 document.head.appendChild(styleEl);
             }
         })();
+
+// ----------------------------------------------------------------------
+        // OFFICIAL KARNATAKA HIGH SCHOOL (9th & 10th) CCE GRADE CHART ENGINE
+        // ----------------------------------------------------------------------
+        calculateHighSchoolGrade = function(score, maxScore, isClass9 = false) {
+            if (score === null || score === undefined || score === "" || isNaN(score)) return "NA";
+            const val = parseFloat(score);
+
+            // Exact Official Chart Match for 125 Marks (10th First Language)
+            if (maxScore === 125) {
+                if (val >= 112) return "A+";
+                if (val >= 100) return "A";
+                if (val >= 87) return "B+";
+                if (val >= 75) return "B";
+                if (val >= 63) return "C+";
+                if (val >= 44) return "C";
+                return "NA";
+            }
+
+            // Exact Official Chart Match for 625 Marks (SSLC Grand Total)
+            if (maxScore === 625) {
+                if (val >= 563) return "A+";
+                if (val >= 500) return "A";
+                if (val >= 438) return "B+";
+                if (val >= 375) return "B";
+                if (val >= 313) return "C+";
+                if (val >= 219) return "C";
+                return "NA";
+            }
+
+            // Exact Official Chart Match for 200 Raw FA Total
+            if (maxScore === 200) {
+                if (val >= 180) return "A+";
+                if (val >= 160) return "A";
+                if (val >= 140) return "B+";
+                if (val >= 120) return "B";
+                if (val >= 100) return "C+";
+                if (val >= 70) return "C";
+                return "NA";
+            }
+
+            // Exact Official Chart Match for 25% FA (First Language Converted)
+            if (maxScore === 25) {
+                if (val >= 22) return "A+";
+                if (val >= 20) return "A";
+                if (val >= 17) return "B+";
+                if (val >= 15) return "B";
+                if (val >= 13) return "C+";
+                if (val >= 9) return "C";
+                return "NA";
+            }
+
+            // Exact Official Chart Match for 20% FA (Core Subjects Converted)
+            if (maxScore === 20) {
+                if (val >= 18) return "A+";
+                if (val >= 16) return "A";
+                if (val >= 14) return "B+";
+                if (val >= 12) return "B";
+                if (val >= 10) return "C+";
+                if (val >= 7) return "C";
+                return "NA";
+            }
+
+            const percentage = (val / maxScore) * 100;
+
+            // Class 9 Official Chart: A+:90-100%, A:70-89.9%, B+:50-69.9%, B:40-49.9%, C+:30-39.9%, C:<30%
+            if (isClass9) {
+                if (percentage >= 90) return "A+";
+                if (percentage >= 70) return "A";
+                if (percentage >= 50) return "B+";
+                if (percentage >= 40) return "B";
+                if (percentage >= 30) return "C+";
+                return "C";
+            }
+
+            // Standard SSLC 10th Scale (Out of 100/50/80)
+            if (percentage >= 90) return "A+";
+            if (percentage >= 80) return "A";
+            if (percentage >= 70) return "B+";
+            if (percentage >= 60) return "B";
+            if (percentage >= 50) return "C+";
+            if (percentage >= 35) return "C";
+            return "NA";
+        };
         
     </script>
 </body>
