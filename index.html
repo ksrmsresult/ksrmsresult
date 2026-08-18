@@ -8798,6 +8798,75 @@
                 </tr>
             `).join('');
         };
+
+// ----------------------------------------------------------------------
+        // STRICT A4 PORTRAIT MODE & SINGLE PAGE FIT FIX FOR PROGRESS CARD & EXAM SHEETS
+        // ----------------------------------------------------------------------
+        function forcePortraitPrint() {
+            const styleEl = document.getElementById('dynamicPageStyle');
+            if (styleEl) {
+                styleEl.innerHTML = `@page { size: A4 portrait !important; margin: 4mm 5mm !important; }`;
+            }
+        }
+
+        function forceLandscapePrint() {
+            const styleEl = document.getElementById('dynamicPageStyle');
+            if (styleEl) {
+                styleEl.innerHTML = `@page { size: A4 landscape !important; margin: 4mm 5mm !important; }`;
+            }
+        }
+
+        // Progress Card - Force Portrait & 1 Page Compact Fit
+        if (typeof renderIndividualReport === 'function') {
+            const _origProgressCardFunc = renderIndividualReport;
+            renderIndividualReport = function() {
+                forcePortraitPrint();
+                _origProgressCardFunc();
+                forcePortraitPrint();
+
+                const card = document.getElementById('individualCardPaper');
+                if (card) {
+                    card.style.maxWidth = '195mm';
+                    card.style.margin = '0 auto';
+                    card.style.padding = '6px 8px';
+
+                    // Compact padding so everything fits on 1 single Portrait page
+                    const tds = card.querySelectorAll('td, th');
+                    tds.forEach(td => {
+                        td.style.padding = '3px 2px';
+                    });
+                }
+            };
+        }
+
+        // Exam Sheet - Single Subject = Portrait, All Subjects = Landscape
+        if (typeof renderExamSheetReportAndPrint === 'function') {
+            const _origExamSheetFunc = renderExamSheetReportAndPrint;
+            renderExamSheetReportAndPrint = function() {
+                if (typeof examReportMode !== 'undefined' && examReportMode === 'SINGLE_SUBJECT') {
+                    forcePortraitPrint();
+                } else {
+                    forceLandscapePrint();
+                }
+
+                _origExamSheetFunc();
+
+                if (typeof examReportMode !== 'undefined' && examReportMode === 'SINGLE_SUBJECT') {
+                    forcePortraitPrint();
+
+                    // Compact padding for 25+ student rows on 1 Portrait page
+                    const container = document.getElementById('printContainer');
+                    if (container) {
+                        const tds = container.querySelectorAll('td, th');
+                        tds.forEach(td => {
+                            td.style.padding = '2px 2px';
+                        });
+                    }
+                } else {
+                    forceLandscapePrint();
+                }
+            };
+        }
         
     </script>
 </body>
