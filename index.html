@@ -10006,6 +10006,170 @@
                 `;
             }).join('');
         };
+
+// ----------------------------------------------------------------------
+        // HIGH SCHOOL TEACHER REGISTER - EXACT MATCH WITH USER PHOTO FORMAT
+        // ----------------------------------------------------------------------
+        renderTeacherIndividualRegisterHTML = function(className, subKey) {
+            const cat = getClassCategory(className);
+
+            if (cat === 'PRIMARY') {
+                renderExamSheetReportAndPrint();
+                return;
+            }
+
+            const isFL = (subKey === 's1'); // First Language (125 Marks)
+            const maxSubMarks = isFL ? 125 : 100;
+            const maxInternal = isFL ? 25 : 20;
+            const maxExam = isFL ? 100 : 80;
+
+            let subText = document.getElementById('selectedSubjectSelect') ? document.getElementById('selectedSubjectSelect').options[document.getElementById('selectedSubjectSelect').selectedIndex].text : "Subject";
+            subText = getSubjectLabelWithLanguage(subKey, subText);
+
+            const ctName = getCurrentClassTeacherName(className, 'A');
+            const filteredStudents = sampleStudents.filter(s => s.className === className);
+
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 landscape; margin: 3mm 4mm; }`;
+
+            let rowsHtml = filteredStudents.map((s, idx) => {
+                const m = (s.hsMarks && s.hsMarks[subKey]) ? s.hsMarks[subKey] : createBlankHighSchoolSubjectMarks(subKey);
+                
+                // FA1, FA2, FA3, FA4 Raw Totals and Grades
+                const fa1Tot = (parseFloat(m.fa1?.act1) || 0) + (parseFloat(m.fa1?.act2) || 0) + (parseFloat(m.fa1?.written) || 0);
+                const fa1Grade = calculateHighSchoolGrade(fa1Tot, 50);
+
+                const fa2Tot = (parseFloat(m.fa2?.act1) || 0) + (parseFloat(m.fa2?.act2) || 0) + (parseFloat(m.fa2?.written) || 0);
+                const fa2Grade = calculateHighSchoolGrade(fa2Tot, 50);
+
+                const fa3Tot = (parseFloat(m.fa3?.act1) || 0) + (parseFloat(m.fa3?.act2) || 0) + (parseFloat(m.fa3?.written) || 0);
+                const fa3Grade = calculateHighSchoolGrade(fa3Tot, 50);
+
+                const fa4Tot = (parseFloat(m.fa4?.act1) || 0) + (parseFloat(m.fa4?.act2) || 0) + (parseFloat(m.fa4?.written) || 0);
+                const fa4Grade = calculateHighSchoolGrade(fa4Tot, 50);
+
+                // SA1 Section: Exam (For 80/100) + FA1&FA2 (For 20%/25%) = SA1 Total & Grade
+                const sa1Raw = parseFloat(m.sa1?.preparatory100) || 0;
+                const sa1ExamScore = isFL ? sa1Raw : Math.round(sa1Raw * 0.8);
+                const fa1fa2RawSum = fa1Tot + fa2Tot; // Max 100 Raw
+                const fa1fa2Conv20 = Math.round(((fa1fa2RawSum / 100) * maxInternal) * 10) / 10;
+                const sa1Total = Math.round(sa1ExamScore + fa1fa2Conv20);
+                const sa1Grade = calculateHighSchoolGrade(sa1Total, maxSubMarks);
+
+                // Overall FA Summary (After FA4 - Image Columns!)
+                const fa200Sum = fa1Tot + fa2Tot + fa3Tot + fa4Tot; // Max 200 Raw
+                const fa20Conv = Math.round(((fa200Sum / 200) * maxInternal) * 10) / 10;
+                const fa20Grade = calculateHighSchoolGrade((fa200Sum / 200) * 100, 100);
+
+                // SA2 / Board Exam Section
+                const sa2Raw = parseFloat(m.sa2?.preparatory100) || 0;
+                const sa2ExamScore = isFL ? sa2Raw : Math.round(sa2Raw * 0.8);
+                const grandTotal = Math.round(sa2ExamScore + fa20Conv);
+                const grandGrade = calculateHighSchoolGrade(grandTotal, maxSubMarks);
+                const isPass = grandTotal >= (isFL ? 44 : 35);
+
+                return `
+                    <tr class="text-center align-middle fs-8">
+                        <td>${idx + 1}</td>
+                        <td class="fw-bold">${s.sats || '-'}</td>
+                        <td class="fw-bold text-start ps-1">${s.name}</td>
+
+                        <!-- FA1 -->
+                        <td>${m.fa1?.act1 || 0}</td>
+                        <td>${m.fa1?.act2 || 0}</td>
+                        <td>${m.fa1?.written || 0}</td>
+                        <td class="fw-bold bg-light">${fa1Tot}</td>
+                        <td class="fw-bold">${fa1Grade}</td>
+
+                        <!-- FA2 -->
+                        <td>${m.fa2?.act1 || 0}</td>
+                        <td>${m.fa2?.act2 || 0}</td>
+                        <td>${m.fa2?.written || 0}</td>
+                        <td class="fw-bold bg-light">${fa2Tot}</td>
+                        <td class="fw-bold">${fa2Grade}</td>
+
+                        <!-- SA1 Section -->
+                        <td>${sa1ExamScore}</td>
+                        <td class="fw-bold text-primary">${fa1fa2Conv20}</td>
+                        <td class="fw-bold bg-light">${sa1Total}</td>
+                        <td class="fw-bold">${sa1Grade}</td>
+
+                        <!-- FA3 -->
+                        <td>${m.fa3?.act1 || 0}</td>
+                        <td>${m.fa3?.act2 || 0}</td>
+                        <td>${m.fa3?.written || 0}</td>
+                        <td class="fw-bold bg-light">${fa3Tot}</td>
+                        <td class="fw-bold">${fa3Grade}</td>
+
+                        <!-- FA4 -->
+                        <td>${m.fa4?.act1 || 0}</td>
+                        <td>${m.fa4?.act2 || 0}</td>
+                        <td>${m.fa4?.written || 0}</td>
+                        <td class="fw-bold bg-light">${fa4Tot}</td>
+                        <td class="fw-bold">${fa4Grade}</td>
+
+                        <!-- IMAGE COLUMNS: Total FA For 200 | For 20% | Grade -->
+                        <td class="fw-bold bg-warning bg-opacity-25">${fa200Sum}</td>
+                        <td class="fw-bold text-primary bg-warning bg-opacity-25">${fa20Conv}</td>
+                        <td class="fw-bold bg-warning bg-opacity-25">${fa20Grade}</td>
+
+                        <!-- SA2 / Final Board Exam -->
+                        <td>${sa2ExamScore}</td>
+                        <td class="fw-bold text-primary">${fa20Conv}</td>
+                        <td class="fw-bold text-dark fs-7 bg-success bg-opacity-10">${grandTotal}</td>
+                        <td><span class="badge ${isPass ? 'bg-success' : 'bg-danger'}">${grandGrade}</span></td>
+                    </tr>
+                `;
+            }).join('');
+
+            const container = document.getElementById('printContainer');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="teacher-register-paper p-1" style="font-family: 'Anek Kannada', 'Poppins', sans-serif;">
+                    <div class="text-center mb-2">
+                        <div class="fw-bold fs-6">${t('ಕ್ಷೇತ್ರ ಶಿಕ್ಷಣಾಧಿಕಾರಿಗಳ ಕಾರ್ಯಾಲಯ', 'Office of the Block Education Officer')} ${appSettings.block}</div>
+                        <div class="fw-bold text-primary fs-5 report-school-name">${appSettings.schoolName}</div>
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-1 px-2 fs-8 fw-bold">
+                            <span>${t('ಶೈಕ್ಷಣಿಕ ವರ್ಷ:', 'Academic Year:')} ${appSettings.academicYear} | <strong>${subText}</strong></span>
+                            <span class="fs-6 text-danger">${t('ಪ್ರೌಢಶಾಲಾ CCE ವಿಷಯವಾರು ಅಂಕಗಳ ರಜಿಸ್ಟರ್ (High School Subject Register)', 'High School CCE Subject Marks Register')}</span>
+                            <span>${t('ತರಗತಿ:', 'Class:')} ${className} | ${t('ಗರಿಷ್ಠ ಅಂಕ:', 'Max Marks:')} ${maxSubMarks}</span>
+                        </div>
+                    </div>
+
+                    <table class="cce-broadsheet-table w-100 mb-2" id="broadsheetTableToExport" style="font-size: 0.62rem;">
+                        <thead>
+                            <tr class="bg-dark text-white text-center">
+                                <th rowspan="2" class="align-middle">#</th>
+                                <th rowspan="2" class="align-middle" style="width: 85px;">SATS ID</th>
+                                <th rowspan="2" class="align-middle" style="min-width: 140px;">${t('ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು', 'Student Name')}</th>
+                                <th colspan="5" class="bg-primary text-white">FA1 (50)</th>
+                                <th colspan="5" class="bg-primary text-white">FA2 (50)</th>
+                                <th colspan="4" class="bg-info text-dark">SA1</th>
+                                <th colspan="5" class="bg-secondary text-white">FA3 (50)</th>
+                                <th colspan="5" class="bg-secondary text-white">FA4 (50)</th>
+                                <th colspan="3" class="bg-warning text-dark">Overall FA Summary</th>
+                                <th colspan="4" class="bg-success text-white">SA2 / Board Exam</th>
+                            </tr>
+                            <tr class="bg-light text-center fs-8">
+                                <th>ACT1</th><th>ACT2</th><th>Test</th><th>Total</th><th>Grade</th>
+                                <th>ACT3</th><th>ACT4</th><th>Test</th><th>Total</th><th>Grade</th>
+                                <th>For ${maxExam}</th><th>For ${maxInternal}% (FA1&amp;2)</th><th>Total</th><th>Grade</th>
+                                <th>ACT5</th><th>ACT6</th><th>Test</th><th>Total</th><th>Grade</th>
+                                <th>ACT7</th><th>ACT8</th><th>Test</th><th>Total</th><th>Grade</th>
+                                <th class="bg-warning bg-opacity-25">Total FA For 200</th><th class="bg-warning bg-opacity-25">For ${maxInternal}%</th><th class="bg-warning bg-opacity-25">Grade</th>
+                                <th>For ${maxExam}</th><th>For ${maxInternal}%</th><th>Total</th><th>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+
+                    <div class="d-flex justify-content-between pt-3 mt-2 fs-8 fw-bold">
+                        <div class="text-center"><div>______________________</div><div>${t('ವಿಷಯ ಶಿಕ್ಷಕರ ಸಹಿ', 'Subject Teacher Signature')} (${subText})</div><small>${ctName}</small></div>
+                        <div class="text-center"><div>______________________</div><div>${t('ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಹಿ &amp; ಮೊಹರು', 'Headmaster Signature &amp; Seal')}</div><small>${appSettings.hmName}</small></div>
+                    </div>
+                </div>
+            `;
+        };
         
     </script>
 </body>
