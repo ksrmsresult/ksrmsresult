@@ -9664,6 +9664,39 @@
                 initAdminSecretEvents();
             }
         })();
+
+        // ----------------------------------------------------------------------
+        // SHOW ADMIN GEAR BUTTON IMMEDIATELY WHEN MASTER ADMIN IS LOGGED IN
+        // ----------------------------------------------------------------------
+        if (typeof updateSessionUI === 'function') {
+            const _baseSessionUI = updateSessionUI;
+            updateSessionUI = function() {
+                _baseSessionUI();
+
+                const adminGearBtn = document.querySelector('button[title="Master Admin Panel"]');
+                if (adminGearBtn) {
+                    if (currentSession.role === 'admin') {
+                        adminGearBtn.style.display = 'inline-block';
+                        adminGearBtn.className = 'btn btn-sm btn-warning text-dark fw-bold me-2 shadow-sm';
+                        adminGearBtn.innerHTML = `<i class="fa-solid fa-user-gear me-1"></i> Admin Panel`;
+                    } else {
+                        adminGearBtn.style.display = 'none';
+                    }
+                }
+            };
+        }
+
+        // Auto-Open Control Panel right after Admin Login
+        if (typeof performAdminLogin === 'function') {
+            const _baseAdminLogin = performAdminLogin;
+            performAdminLogin = function() {
+                _baseAdminLogin();
+                if (currentSession.role === 'admin') {
+                    renderAdminKeysTable();
+                    if (adminPanelModalInstance) adminPanelModalInstance.show();
+                }
+            };
+        }
         
     </script>
 </body>
