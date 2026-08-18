@@ -8364,6 +8364,75 @@
                 injectMobileLangBtn();
             }
         })();
+
+        // ----------------------------------------------------------------------
+        // SECRET MASTER ADMIN ACCESS (HIDDEN FROM PUBLIC USERS)
+        // ----------------------------------------------------------------------
+        (function hidePublicAdminButtonAndEnableSecretAccess() {
+            function applySecretAdminRules() {
+                // 1. Hide public Admin buttons from Screen and Menu
+                const topAdminBtn = document.getElementById('mobileTopAdminBtn');
+                if (topAdminBtn) topAdminBtn.style.display = 'none';
+
+                const navAdminBtn = document.querySelector('button[title="Master Admin Panel"]');
+                if (navAdminBtn) navAdminBtn.style.display = 'none';
+
+                const navAdminItem = document.getElementById('mobileAdminNavItem');
+                if (navAdminItem) navAdminItem.style.display = 'none';
+
+                // 2. Secret Triple Click/Tap on Graduation Cap Logo to open Admin Panel
+                const brandLogo = document.querySelector('.navbar-brand');
+                if (brandLogo && !brandLogo.getAttribute('data-secret-bound')) {
+                    brandLogo.setAttribute('data-secret-bound', 'true');
+                    let clickCount = 0;
+                    let clickTimer = null;
+
+                    brandLogo.addEventListener('click', function(e) {
+                        clickCount++;
+                        if (clickCount === 1) {
+                            clickTimer = setTimeout(() => { clickCount = 0; }, 800);
+                        } else if (clickCount >= 3) {
+                            clearTimeout(clickTimer);
+                            clickCount = 0;
+                            triggerAdminPanelAccess();
+                        }
+                    });
+                }
+
+                // 3. Secret Triple Click/Tap on Mandatory Footer Tag
+                const footerTag = document.querySelector('.mandatory-print-footer');
+                if (footerTag && !footerTag.getAttribute('data-secret-bound')) {
+                    footerTag.setAttribute('data-secret-bound', 'true');
+                    let fCount = 0;
+                    let fTimer = null;
+
+                    footerTag.addEventListener('click', function(e) {
+                        fCount++;
+                        if (fCount === 1) {
+                            fTimer = setTimeout(() => { fCount = 0; }, 800);
+                        } else if (fCount >= 3) {
+                            clearTimeout(fTimer);
+                            fCount = 0;
+                            triggerAdminPanelAccess();
+                        }
+                    });
+                }
+            }
+
+            // 4. Secret Keyboard Shortcut: Ctrl + Shift + A
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+                    e.preventDefault();
+                    triggerAdminPanelAccess();
+                }
+            });
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', applySecretAdminRules);
+            } else {
+                applySecretAdminRules();
+            }
+        })();
         
     </script>
 </body>
