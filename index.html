@@ -9590,6 +9590,80 @@
 
             reader.readAsBinaryString(file);
         };
+
+        // ----------------------------------------------------------------------
+        // DIRECT MASTER ADMIN ACCESS TRIGGER FIX
+        // ----------------------------------------------------------------------
+        function triggerMasterAdminAccess() {
+            if (currentSession.role === 'admin') {
+                renderAdminKeysTable();
+                if (adminPanelModalInstance) adminPanelModalInstance.show();
+            } else {
+                // Show Admin Login Tab Header and automatically select Admin Login Tab
+                const adminTabBtn = document.getElementById('admin-tab');
+                if (adminTabBtn) {
+                    adminTabBtn.style.display = 'block';
+                    const tab = new bootstrap.Tab(adminTabBtn);
+                    tab.show();
+                }
+                if (loginModalInstance) loginModalInstance.show();
+            }
+        }
+
+        // Secret Admin Access Binder
+        (function bindDirectAdminAccess() {
+            function initAdminSecretEvents() {
+                // 1. Secret Triple Click on Graduation Cap Logo
+                const brandLogo = document.querySelector('.navbar-brand');
+                if (brandLogo) {
+                    let clickCount = 0;
+                    let clickTimer = null;
+
+                    brandLogo.addEventListener('click', function(e) {
+                        clickCount++;
+                        if (clickCount === 1) {
+                            clickTimer = setTimeout(() => { clickCount = 0; }, 800);
+                        } else if (clickCount >= 3) {
+                            clearTimeout(clickTimer);
+                            clickCount = 0;
+                            triggerMasterAdminAccess();
+                        }
+                    });
+                }
+
+                // 2. Secret Triple Click on Footer Tag
+                const footerTag = document.querySelector('.mandatory-print-footer');
+                if (footerTag) {
+                    let fCount = 0;
+                    let fTimer = null;
+
+                    footerTag.addEventListener('click', function(e) {
+                        fCount++;
+                        if (fCount === 1) {
+                            fTimer = setTimeout(() => { fCount = 0; }, 800);
+                        } else if (fCount >= 3) {
+                            clearTimeout(fTimer);
+                            fCount = 0;
+                            triggerMasterAdminAccess();
+                        }
+                    });
+                }
+            }
+
+            // 3. Secret Keyboard Shortcut: Ctrl + Shift + A
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+                    e.preventDefault();
+                    triggerMasterAdminAccess();
+                }
+            });
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initAdminSecretEvents);
+            } else {
+                initAdminSecretEvents();
+            }
+        })();
         
     </script>
 </body>
