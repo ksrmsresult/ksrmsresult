@@ -8433,6 +8433,154 @@
                 applySecretAdminRules();
             }
         })();
+
+// ----------------------------------------------------------------------
+        // ARCHIVE-BASED MULTI-YEAR PROMOTION & YEAR SWITCHING (NO DOUBLE COUNT)
+        // ----------------------------------------------------------------------
+        let currentActiveYear = appSettings.academicYear || '2026-27';
+
+        function getNextYearStr(yStr) {
+            const parts = String(yStr || '2026-27').split('-');
+            if (parts.length === 2) {
+                return `${parseInt(parts[0]) + 1}-${parseInt(parts[1]) + 1}`;
+            }
+            return '2027-28';
+        }
+
+        // Save active year's snapshot archive
+        function saveActiveYearArchive() {
+            const activeYear = appSettings.academicYear || '2026-27';
+            const key = `ksrms_archive_${currentSession.diseCode}_${activeYear}`;
+            localStorage.setItem(key, JSON.stringify(sampleStudents));
+            if (db && currentSession.diseCode) {
+                try {
+                    db.collection("ksrms_schools").doc(currentSession.diseCode).collection("year_archives").doc(activeYear).set({
+                        students: sampleStudents,
+                        updatedAt: Date.now()
+                    });
+                } catch(e) {}
+            }
+        }
+
+        // Load archived year data
+        async function loadYearArchive(targetYear) {
+            saveActiveYearArchive(); // Save current state before switching
+            
+            const key = `ksrms_archive_${currentSession.diseCode}_${targetYear}`;
+            let loadedData = null;
+
+            // Try Cloud Archive first
+            if (db && currentSession.diseCode) {
+                try {
+                    const docSnap = await db.collection("ksrms_schools").doc(currentSession.diseCode).collection("year_archives").doc(targetYear).get();
+                    if (docSnap.exists) {
+                        loadedData = docSnap.data().students;
+                    }
+                } catch(e) {}
+            }
+
+            // Local Storage fallback
+            if (!loadedData) {
+                const localStr = localStorage.getItem(key);
+                if (localStr) loadedData = JSON.parse(localStr);
+            }
+
+            if (loadedData && Array.isArray(loadedData)) {
+                sampleStudents = loadedData;
+            }
+
+            appSettings.academicYear = targetYear;
+            currentActiveYear = targetYear;
+
+            const displaySpan = document.getElementById('dashAcademicYearDisplay');
+            if (displaySpan) displaySpan.innerText = targetYear;
+            const yearSelect = document.getElementById('dashYearSelect');
+            if (yearSelect) yearSelect.value = targetYear;
+            const cfgYearInput = document.getElementById('cfgAcademicYear');
+            if (cfgYearInput) cfgYearInput.value = targetYear;
+
+            syncSchoolDataToCloud();
+            onClassChangeHandle();
+        }
+
+        // Overrider for Promotion Process (Keeps count exact, no doubling!)
+        triggerPromotionProcess = function() {
+            if (!checkLicensePermission("perform student promotion")) return;
+
+            const currentYearStr = appSettings.academicYear || '2026-27';
+            const nextYearStr = getNextYearStr(currentYearStr);
+
+            const confirmMsg = `ಪ್ರಸ್ತುತ ಶೈಕ್ಷಣಿಕ ವರ್ಷ (${currentYearStr}) ದಿಂದ ಮುಂದಿನ ಶೈಕ್ಷಣಿಕ ವರ್ಷಕ್ಕೆ (${nextYearStr}) ಮಕ್ಕಳನ್ನು ಪ್ರಮೋಟ್ ಮಾಡಬೇಕೇ?\n\n` +
+                               `• ${currentYearStr} ರ ಪೂರ್ಣ ಅಂಕಗಳು ಮತ್ತು ವರದಿಗಳು ಆ ವರ್ಷದ ಆರ್ಕೈವ್‌ನಲ್ಲಿ ಸುರಕ್ಷಿತವಾಗಿ ಉಳಿಯುತ್ತವೆ.\n` +
+                               `• ${nextYearStr} ಹೊಸ ವರ್ಷಕ್ಕೆ ಮಕ್ಕಳು ಮುಂದಿನ ತರಗತಿಗೆ ಬಡ್ತಿ ಹೊಂದುತ್ತಾರೆ.\n` +
+                               `• ಡ್ರಾಪ್‌ಡೌನ್‌ನಲ್ಲಿ ${currentYearStr} ಆಯ್ಕೆ ಮಾಡಿದರೆ ಹಳೆಯ ಡೇಟಾವನ್ನು ಮತ್ತೆ ಪಡೆಯಬಹುದು.`;
+
+            if (confirm(confirmMsg)) {
+                // 1. Save backup archive of current year
+                saveActiveYearArchive();
+
+                const classMap = {
+                    "1st Standard": "2nd Standard",
+                    "2nd Standard": "3rd Standard",
+                    "3rd Standard": "4th Standard",
+                    "4th Standard": "5th Standard",
+                    "5th Standard": "6th Standard",
+                    "6th Standard": "7th Standard",
+                    "7th Standard": "8th Standard",
+                    "8th Standard": "9th Standard",
+                    "9th Standard": "10th Standard",
+                    "10th Standard": "Completed / Alumni"
+                };
+
+                let promotedCount = 0;
+                let alumniCount = 0;
+
+                // 2. Promote students for the new year IN PLACE (keeps total count exact!)
+                sampleStudents.forEach(st => {
+                    if (st.className === "10th Standard") {
+                        st.className = "Completed / Alumni";
+                        alumniCount++;
+                    } else if (classMap[st.className]) {
+                        st.className = classMap[st.className];
+                        promotedCount++;
+                    }
+                    // Clear marks for the new academic year
+                    st.marks = {};
+                    st.hsMarks = {};
+                    st.co = { c1:'B', c2:'B', c3:'B', c4:'B', c5:'B', c6:'B', c7:'B', ict: 75, attDays: 205, res: 'ಉತ್ತೀರ್ಣ' };
+                });
+
+                // 3. Switch active academic year to nextYearStr
+                appSettings.academicYear = nextYearStr;
+                currentActiveYear = nextYearStr;
+
+                const displaySpan = document.getElementById('dashAcademicYearDisplay');
+                if (displaySpan) displaySpan.innerText = nextYearStr;
+                const yearSelect = document.getElementById('dashYearSelect');
+                if (yearSelect) yearSelect.value = nextYearStr;
+                const cfgYearInput = document.getElementById('cfgAcademicYear');
+                if (cfgYearInput) cfgYearInput.value = nextYearStr;
+
+                // 4. Save new year's initial state & sync
+                saveActiveYearArchive();
+                syncSchoolDataToCloud();
+                onClassChangeHandle();
+
+                alert(`ಪ್ರಮೋಷನ್ ಯಶಸ್ವಿಯಾಗಿದೆ!\n\n` +
+                      `• ಹೊಸ ಶೈಕ್ಷಣಿಕ ವರ್ಷ: ${nextYearStr}\n` +
+                      `• ಮುಂದಿನ ತರಗತಿಗೆ ಬಡ್ತಿ ಹೊಂದಿದವರು: ${promotedCount} ಮಕ್ಕಳು\n` +
+                      `• 10th ತರಗತಿ ಪೂರ್ಣಗೊಳಿಸಿದವರು (Alumni): ${alumniCount} ಮಕ್ಕಳು\n` +
+                      `• ಒಟ್ಟು ಮಕ್ಕಳ ಸಂಖ್ಯೆ: ${sampleStudents.length}\n\n` +
+                      `ಹಳೆಯ ವರ್ಷದ (${currentYearStr}) ಡೇಟಾ ಬೇಕಾದಾಗ ವರ್ಷದ ಡ್ರಾಪ್‌ಡೌನ್‌ನಲ್ಲಿ ${currentYearStr} ಆಯ್ಕೆ ಮಾಡಬಹುದು.`);
+            }
+        };
+
+        // Override updateAcademicYearGlobal to load archived year data
+        updateAcademicYearGlobal = function(newYear) {
+            if (newYear !== appSettings.academicYear) {
+                loadYearArchive(newYear);
+            }
+        };
         
     </script>
 </body>
