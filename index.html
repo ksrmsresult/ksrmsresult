@@ -12752,6 +12752,178 @@
                 maxExam
             };
         };
+
+// ----------------------------------------------------------------------
+        // CLASS 9 ACCURATE GRADE CHART & CONSOLIDATED REGISTER FIX
+        // ----------------------------------------------------------------------
+        calculateHighSchoolGrade = function(score, maxScore, isClass9 = false) {
+            if (score === null || score === undefined || score === "" || isNaN(score)) return "-";
+            const val = parseFloat(score);
+
+            // 10th Class SSLC Explicit Checks
+            if (!isClass9 && maxScore === 125) {
+                if (val >= 112) return "A+";
+                if (val >= 100) return "A";
+                if (val >= 87) return "B+";
+                if (val >= 75) return "B";
+                if (val >= 63) return "C+";
+                if (val >= 44) return "C";
+                return "NA";
+            }
+
+            if (!isClass9 && maxScore === 625) {
+                if (val >= 563) return "A+";
+                if (val >= 500) return "A";
+                if (val >= 438) return "B+";
+                if (val >= 375) return "B";
+                if (val >= 313) return "C+";
+                if (val >= 219) return "C";
+                return "NA";
+            }
+
+            const percentage = (val / maxScore) * 100;
+
+            // OFFICIAL CLASS 9 GRADE CHART MATCH:
+            // A+: 90 - 100%
+            // A : 70 - 89.9% (88% -> A !)
+            // B+: 50 - 69.9% (66% -> B+ !)
+            // B : 40 - 49.9%
+            // C+: 30 - 39.9%
+            // C : 0  - 29.9%
+            if (isClass9) {
+                if (percentage >= 90) return "A+";
+                if (percentage >= 70) return "A";
+                if (percentage >= 50) return "B+";
+                if (percentage >= 40) return "B";
+                if (percentage >= 30) return "C+";
+                return "C";
+            }
+
+            // OFFICIAL CLASS 10 SSLC GRADE CHART
+            if (percentage >= 90) return "A+";
+            if (percentage >= 80) return "A";
+            if (percentage >= 70) return "B+";
+            if (percentage >= 60) return "B";
+            if (percentage >= 50) return "C+";
+            if (percentage >= 35) return "C";
+            return "NA";
+        };
+
+        // Class 9 Consolidated Register Override
+        renderClass9ConsolidatedRegister = function(className) {
+            const filteredStudents = sampleStudents.filter(s => s && isSameClass(s.className, className));
+            const ctName = getCurrentClassTeacherName(className, 'A');
+
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 landscape; margin: 4mm; }`;
+
+            let rowsHtml = filteredStudents.map((s, idx) => {
+                const isCwsnExempt = s.cwsnStatus === 'Yes-Exempt';
+
+                const sub1 = calculateSubjectFinalMarks('s1', s.hsMarks?.s1, className);
+                const sub2 = calculateSubjectFinalMarks('s2', s.hsMarks?.s2, className);
+                const sub3 = calculateSubjectFinalMarks('s3', s.hsMarks?.s3, className);
+                const sub4 = calculateSubjectFinalMarks('s4', s.hsMarks?.s4, className);
+                const sub5 = calculateSubjectFinalMarks('s5', s.hsMarks?.s5, className);
+                const sub6 = calculateSubjectFinalMarks('s6', s.hsMarks?.s6, className);
+
+                const hasAnyMarks = (sub1.grandTotal > 0 || sub2.grandTotal > 0 || sub3.grandTotal > 0 || sub4.grandTotal > 0 || sub5.grandTotal > 0 || sub6.grandTotal > 0);
+
+                const grandTotalObtained = sub1.grandTotal + sub2.grandTotal + sub3.grandTotal + sub4.grandTotal + sub5.grandTotal + sub6.grandTotal;
+                const maxGrandTotal = 600;
+
+                const allPassed = sub1.pass && sub2.pass && sub3.pass && sub4.pass && sub5.pass && sub6.pass;
+                const overallPerc = hasAnyMarks ? ((grandTotalObtained / maxGrandTotal) * 100).toFixed(1) : 0;
+                const overallGrade = hasAnyMarks ? calculateHighSchoolGrade(grandTotalObtained, maxGrandTotal, true) : '-';
+
+                let resultText = '-';
+                if (isCwsnExempt) resultText = 'CWSN';
+                else if (hasAnyMarks) resultText = allPassed ? 'PROMOTED' : 'DETAINED';
+
+                const co = s.co || { c1:'A', c2:'A', c3:'A', c4:'A' };
+
+                return `
+                    <tr class="text-center align-middle fs-8 ${hasAnyMarks && !allPassed && !isCwsnExempt ? 'table-danger bg-opacity-10' : ''}">
+                        <td>${idx + 1}</td>
+                        <td class="fw-bold">${s.admissionNo || '-'}</td>
+                        <td class="fw-bold text-start ps-1">${s.name} ${isCwsnExempt ? '<span class="badge bg-danger ms-1">CWSN</span>' : ''}</td>
+                        <td>${s.sats || '-'}</td>
+
+                        <td>${sub1.grandTotal > 0 ? sub1.grandTotal : '-'}</td><td class="fw-bold">${sub1.grandTotal > 0 ? sub1.grade : '-'}</td>
+                        <td>${sub2.grandTotal > 0 ? sub2.grandTotal : '-'}</td><td class="fw-bold">${sub2.grandTotal > 0 ? sub2.grade : '-'}</td>
+                        <td>${sub3.grandTotal > 0 ? sub3.grandTotal : '-'}</td><td class="fw-bold">${sub3.grandTotal > 0 ? sub3.grade : '-'}</td>
+                        <td>${sub4.grandTotal > 0 ? sub4.grandTotal : '-'}</td><td class="fw-bold">${sub4.grandTotal > 0 ? sub4.grade : '-'}</td>
+                        <td>${sub5.grandTotal > 0 ? sub5.grandTotal : '-'}</td><td class="fw-bold">${sub5.grandTotal > 0 ? sub5.grade : '-'}</td>
+                        <td>${sub6.grandTotal > 0 ? sub6.grandTotal : '-'}</td><td class="fw-bold">${sub6.grandTotal > 0 ? sub6.grade : '-'}</td>
+
+                        <td class="fw-bold fs-7 text-primary bg-warning bg-opacity-10">${hasAnyMarks ? `${grandTotalObtained} / 600` : '-'}</td>
+                        <td class="fw-bold">${hasAnyMarks ? `${overallPerc}%` : '-'}</td>
+                        <td><span class="badge ${hasAnyMarks ? (allPassed ? 'bg-success' : 'bg-danger') : 'bg-secondary'}">${overallGrade}</span></td>
+                        <td class="fw-bold ${hasAnyMarks ? (allPassed ? 'text-success' : 'text-danger') : 'text-muted'}">${resultText}</td>
+
+                        <td class="fw-bold">${co.c1 || 'A'}</td>
+                        <td class="fw-bold">${co.c2 || 'A'}</td>
+                        <td class="fw-bold">${co.c3 || 'A'}</td>
+                        <td class="fw-bold">${co.c4 || 'A'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const container = document.getElementById('printContainer');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="consolidated-register-paper p-2" style="font-family: 'Anek Kannada', 'Poppins', sans-serif;">
+                    <div class="text-center mb-2">
+                        <div class="fw-bold fs-6">${t('ಸಾರ್ವಜನಿಕ ಶಿಕ್ಷಣ ಇಲಾಖೆ - ಕರ್ನಾಟಕ ಸರ್ಕಾರ', 'Department of Public Instruction - Govt of Karnataka')}</div>
+                        <div class="fw-bold text-primary fs-4 report-school-name">${appSettings.schoolName}</div>
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-1 px-3 fs-8 fw-bold">
+                            <span>${t('ಡೈಸ್ ಕೋಡ್:', 'DISE Code:')} ${appSettings.diseCode} | ${t('ಬ್ಲಾಕ್:', 'Block:')} ${appSettings.block}</span>
+                            <span class="fs-6 text-dark">${appSettings.academicYear} - ${t('9ನೇ ತರಗತಿ ವಾರ್ಷಿಕ ಕ್ರೂಢೀಕೃತ ಫಲಿತಾಂಶ ಪತ್ರಿಕೆ', 'Class 9 Consolidated Result Register')}</span>
+                            <span>${t('ಒಟ್ಟು ಅಂಕಗಳು:', 'Max Marks:')} 600 | ${t('ತರಗತಿ:', 'Class:')} ${className}</span>
+                        </div>
+                    </div>
+
+                    <table class="cce-broadsheet-table w-100 mb-3" id="broadsheetTableToExport" style="font-size: 0.75rem;">
+                        <thead>
+                            <tr class="bg-dark text-white text-center">
+                                <th rowspan="2" class="align-middle">#</th>
+                                <th rowspan="2" class="align-middle">${t('ದಾ.ಸಂ', 'Adm No')}</th>
+                                <th rowspan="2" class="align-middle" style="min-width: 150px;">${t('ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು', 'Student Name')}</th>
+                                <th rowspan="2" class="align-middle">${t('SATS ಸಂಖ್ಯೆ', 'SATS No')}</th>
+                                <th colspan="2">${t('ಪ್ರಥಮ ಭಾಷೆ (100)', 'First Language (100)')}</th>
+                                <th colspan="2">${t('ದ್ವಿತೀಯ ಭಾಷೆ (100)', 'Second Language (100)')}</th>
+                                <th colspan="2">${t('ತೃತೀಯ ಭಾಷೆ (100)', 'Third Language (100)')}</th>
+                                <th colspan="2">${t('ಗಣಿತ (100)', 'Mathematics (100)')}</th>
+                                <th colspan="2">${t('ವಿಜ್ಞಾನ (100)', 'Science (100)')}</th>
+                                <th colspan="2">${t('ಸಮಾಜ ವಿಜ್ಞಾನ (100)', 'Social Science (100)')}</th>
+                                <th colspan="4" class="bg-success text-white">${t('ಒಟ್ಟು ಶೈಕ್ಷಣಿಕ ಫಲಿತಾಂಶ', 'Total Academic Result')}</th>
+                                <th colspan="4" class="bg-secondary text-white">${t('ಸಹಪಠ್ಯ ಶ್ರೇಣಿಗಳು', 'Co-Scholastic Grades')}</th>
+                            </tr>
+                            <tr class="bg-light text-center">
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th class="bg-warning text-dark">${t('ಒಟ್ಟು (600)', 'Total (600)')}</th>
+                                <th>${t('ಶೇಕಡಾ (%)', '% Percentage')}</th>
+                                <th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಫಲಿತಾಂಶ', 'Result')}</th>
+                                <th>${t('ಮೌಲ್ಯ ಶಿಕ್ಷಣ', 'Value Edu')}</th><th>${t('ಕಾರ್ಯಾನುಭವ', 'Work Exp')}</th><th>${t('ಕಲಾ ಶಿಕ್ಷಣ', 'Art Edu')}</th><th>${t('ದೈಹಿಕ ಶಿಕ್ಷಣ', 'PE')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+
+                    <div class="d-flex justify-content-between pt-4 mt-3 fs-8 fw-bold">
+                        <div class="text-center"><div>______________________</div><div>${t('ವರ್ಗ ಶಿಕ್ಷಕರ ಸಹಿ', 'Class Teacher Signature')}</div><small>${ctName}</small></div>
+                        <div class="text-center"><div>______________________</div><div>${t('ಪರೀಕ್ಷಾ ವಿಷಯ ಶಿಕ್ಷಕರ ಸಹಿ', 'Subject Teacher Signature')}</div></div>
+                        <div class="text-center"><div>______________________</div><div>${t('ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಹಿ &amp; ಮೊಹರು', 'Headmaster Signature &amp; Seal')}</div><small>${appSettings.hmName}</small></div>
+                    </div>
+                </div>
+            `;
+        };
         
     </script>
 </body>
