@@ -12924,6 +12924,93 @@
                 </div>
             `;
         };
+
+      // ----------------------------------------------------------------------
+        // 9th CLASS 100 MARKS MAX LIMIT FIX FOR FIRST LANGUAGE & ALL SUBJECTS
+        // ----------------------------------------------------------------------
+        calculateSubjectFinalMarks = function(subId, marksObj, className) {
+            if (!marksObj) marksObj = createBlankHighSchoolSubjectMarks(subId);
+
+            const cat = getClassCategory(className);
+            const isClass10 = (cat === 'CLASS10'); // 10th Standard ONLY
+            const isFL = (subId === 's1');         // First Language
+
+            // 125 Marks rule applies ONLY to 10th Class First Language!
+            // For 9th Class, ALL subjects (including First Language) are strictly out of 100 Total!
+            const maxMarks = (isFL && isClass10) ? 125 : 100;
+            const maxInternal = (isFL && isClass10) ? 25 : 20;
+            const maxExam = (isFL && isClass10) ? 100 : 80;
+            const passMin = (isFL && isClass10) ? 44 : 35;
+
+            // Formative Raw Marks (Each FA out of 50)
+            const fa1Tot = (parseFloat(marksObj.fa1?.act1) || 0) + (parseFloat(marksObj.fa1?.act2) || 0) + (parseFloat(marksObj.fa1?.written) || 0);
+            const fa2Tot = (parseFloat(marksObj.fa2?.act1) || 0) + (parseFloat(marksObj.fa2?.act2) || 0) + (parseFloat(marksObj.fa2?.written) || 0);
+            const fa3Tot = (parseFloat(marksObj.fa3?.act1) || 0) + (parseFloat(marksObj.fa3?.act2) || 0) + (parseFloat(marksObj.fa3?.written) || 0);
+            const fa4Tot = (parseFloat(marksObj.fa4?.act1) || 0) + (parseFloat(marksObj.fa4?.act2) || 0) + (parseFloat(marksObj.fa4?.written) || 0);
+
+            // FA Grades
+            const fa1Grade = calculateHighSchoolGrade(fa1Tot, 50, !isClass10);
+            const fa2Grade = calculateHighSchoolGrade(fa2Tot, 50, !isClass10);
+            const fa3Grade = calculateHighSchoolGrade(fa3Tot, 50, !isClass10);
+            const fa4Grade = calculateHighSchoolGrade(fa4Tot, 50, !isClass10);
+
+            // FA Conversions using Math.ceil()
+            const fa1fa2Sum = fa1Tot + fa2Tot;
+            const fa1fa2Conv = fa1fa2Sum > 0 ? Math.ceil((fa1fa2Sum / 100) * maxInternal) : 0;
+
+            const fa3fa4Sum = fa3Tot + fa4Tot;
+            const fa3fa4Conv = fa3fa4Sum > 0 ? Math.ceil((fa3fa4Sum / 100) * maxInternal) : 0;
+
+            const fa200Sum = fa1Tot + fa2Tot + fa3Tot + fa4Tot;
+            const fa20Conv = fa200Sum > 0 ? Math.ceil((fa200Sum / 200) * maxInternal) : 0;
+            const fa20Grade = calculateHighSchoolGrade((fa200Sum / 200) * 100, 100, !isClass10);
+
+            // Exam Score Conversions (10th FL = 100%, 9th FL & Core Subjects = 80%)
+            const sa1Raw = parseFloat(marksObj.sa1?.preparatory100) || 0;
+            const sa1ExamScore = (isFL && isClass10) ? sa1Raw : Math.round(sa1Raw * 0.8);
+            const sa1Total = Math.round(sa1ExamScore + fa1fa2Conv);
+            const sa1Grade = calculateHighSchoolGrade(sa1Total, maxMarks, !isClass10);
+
+            const sa2Raw = parseFloat(marksObj.sa2?.preparatory100) || 0;
+            const sa2ExamScore = (isFL && isClass10) ? sa2Raw : Math.round(sa2Raw * 0.8);
+            const sa2Total = Math.round(sa2ExamScore + fa3fa4Conv);
+            const sa2Grade = calculateHighSchoolGrade(sa2Total, maxMarks, !isClass10);
+
+            // Final Annual Grand Total
+            const activeExamScore = sa2Raw > 0 ? sa2ExamScore : sa1ExamScore;
+            const grandTotal = Math.round(fa20Conv + activeExamScore);
+            const grandGrade = calculateHighSchoolGrade(grandTotal, maxMarks, !isClass10);
+            const pass = grandTotal >= passMin;
+
+            return {
+                fa1Tot, fa1Grade,
+                fa2Tot, fa2Grade,
+                fa3Tot, fa3Grade,
+                fa4Tot, fa4Grade,
+                sa1Raw,
+                sa1ExamScore,
+                fa1fa2Conv,
+                sa1Converted: fa1fa2Conv,
+                sa1Total,
+                sa1Grade,
+                fa3fa4Conv,
+                sa2Converted: fa3fa4Conv,
+                sa2Raw,
+                sa2ExamScore,
+                sa2Total,
+                sa2Grade,
+                fa200Sum,
+                fa20Conv,
+                fa20Grade,
+                grandTotal,
+                grandGrade,
+                grade: grandGrade,
+                pass,
+                maxMarks,
+                maxInternal,
+                maxExam
+            };
+        };  
         
     </script>
 </body>
