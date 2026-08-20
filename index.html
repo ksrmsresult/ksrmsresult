@@ -16053,6 +16053,89 @@
                 updateDropdown();
             }
         })();
+
+// ----------------------------------------------------------------------
+        // SPACIOUS SUBJECT ROWS & GRADE BADGE BOTTOM-BORDER TOUCHING FIX
+        // ----------------------------------------------------------------------
+        (function applySpaciousGradeBadgesStyle() {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'spaciousGradeBadgesStyleFix';
+            styleEl.innerHTML = `
+                /* Generous Table Row Height & Cell Padding */
+                .individual-report-card table th,
+                .individual-report-card table td {
+                    padding: 9px 10px !important; /* TALL & SPACIOUS ROW HEIGHT */
+                    font-size: 0.86rem !important;
+                    line-height: 1.35 !important;
+                    vertical-align: middle !important;
+                }
+
+                /* Grade Badge Alignment Fix - Never Touches Bottom Border Line */
+                .individual-report-card .badge {
+                    display: inline-block !important;
+                    padding: 4px 10px !important;
+                    margin: 2px 0 !important;
+                    font-size: 0.78rem !important;
+                    font-weight: 700 !important;
+                    line-height: 1.1 !important;
+                    vertical-align: middle !important;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+                }
+
+                .individual-report-card .table-dark th {
+                    background-color: #2c3e50 !important;
+                    color: #ffffff !important;
+                    padding: 10px 10px !important;
+                }
+
+                .individual-report-card .bg-secondary th {
+                    background-color: #4a5568 !important;
+                    color: #ffffff !important;
+                    padding: 10px 10px !important;
+                }
+
+                .individual-report-card h6 {
+                    margin-top: 12px !important;
+                    margin-bottom: 6px !important;
+                    padding-bottom: 3px !important;
+                }
+
+                .individual-report-card .student-info-box {
+                    padding: 10px 14px !important;
+                    margin-bottom: 10px !important;
+                }
+
+                .individual-report-card .sig-box-container {
+                    min-height: 80px !important;
+                    max-height: 85px !important;
+                    padding: 6px !important;
+                }
+
+                @media print {
+                    @page {
+                        size: A4 portrait !important;
+                        margin: 4mm 5mm !important;
+                    }
+
+                    .individual-report-card table th,
+                    .individual-report-card table td {
+                        padding: 8px 9px !important;
+                        font-size: 0.85rem !important;
+                    }
+
+                    .individual-report-card .badge {
+                        padding: 3px 8px !important;
+                        margin: 2px 0 !important;
+                    }
+                }
+            `;
+
+            if (!document.getElementById('spaciousGradeBadgesStyleFix')) {
+                document.head.appendChild(styleEl);
+            } else {
+                document.getElementById('spaciousGradeBadgesStyleFix').innerHTML = styleEl.innerHTML;
+            }
+        })();
         
     </script>
 </body>
