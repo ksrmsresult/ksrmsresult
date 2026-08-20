@@ -16136,6 +16136,81 @@
                 document.getElementById('spaciousGradeBadgesStyleFix').innerHTML = styleEl.innerHTML;
             }
         })();
+
+        // ----------------------------------------------------------------------
+        // MOVE RESET DATA TO SETTINGS DANGER ZONE & ENLARGE SAVE / LOGOUT BUTTONS
+        // ----------------------------------------------------------------------
+        (function relocateResetButtonAndEnlargeControls() {
+            function applyUpdates() {
+                // 1. Hide Reset Data button from Dashboard header
+                const dashResetBtn = document.querySelector('#dashboardSection .btn-outline-danger');
+                if (dashResetBtn) {
+                    dashResetBtn.style.display = 'none';
+                }
+
+                // 2. Inject Danger Zone / Reset Data Box inside Settings Section
+                const settingsCardBody = document.querySelector('#settingsSection .card-body');
+                if (settingsCardBody && !document.getElementById('settingsDangerZone')) {
+                    const dangerBox = document.createElement('div');
+                    dangerBox.id = 'settingsDangerZone';
+                    dangerBox.className = 'col-12 mt-4 pt-3 border-top';
+                    dangerBox.innerHTML = `
+                        <div class="alert alert-danger border-2 border-danger d-flex justify-content-between align-items-center flex-wrap gap-2 p-3 shadow-sm rounded">
+                            <div>
+                                <h6 class="fw-bold mb-1 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i> ${t('ಅಪಾಯಕಾರಿ ವಲಯ (Danger Zone)', 'Danger Zone')}</h6>
+                                <small class="text-dark d-block">${t('ಶಾಲೆಯ ಎಲ್ಲಾ ಮಕ್ಕಳ ವಿವರಗಳನ್ನು ಹಾಗೂ ಅಂಕಗಳನ್ನು ಖಾಲಿ ಮಾಡಿ ಮರುಹೊಂದಿಸಲು (Reset) ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ.', 'Permanently clear and reset all student records and marks from the system.')}</small>
+                            </div>
+                            <button type="button" class="btn btn-danger btn-lg fw-bold px-4 shadow-sm" onclick="purgeAllDataAndReset()">
+                                <i class="fa-solid fa-trash-can me-1"></i> ${t('Reset All Data / ಡೇಟಾ ಕ್ಲಿಯರ್ ಮಾಡಿ', 'Reset All Data')}
+                            </button>
+                        </div>`;
+                    
+                    const formRow = settingsCardBody.querySelector('form .row');
+                    if (formRow) formRow.appendChild(dangerBox);
+                }
+
+                // 3. Enlarge "Save All Settings" button inside Settings
+                const saveSettingsBtn = document.querySelector('#settingsSection button[type="submit"]');
+                if (saveSettingsBtn) {
+                    saveSettingsBtn.className = "btn btn-success btn-lg fw-bold px-5 py-2 shadow";
+                    saveSettingsBtn.style.fontSize = "1.05rem";
+                }
+
+                // 4. Enlarge Session Badge & Add Explicit Logout Button on Top Navbar
+                const sessionBadge = document.getElementById('sessionStatusBadge');
+                if (sessionBadge) {
+                    sessionBadge.style.fontSize = "0.92rem";
+                    sessionBadge.style.padding = "8px 14px";
+                }
+
+                // Add Logout Button if logged in
+                const navRightGroup = document.querySelector('nav .ms-auto');
+                if (navRightGroup && !document.getElementById('navLogoutBtn')) {
+                    const logoutBtn = document.createElement('button');
+                    logoutBtn.id = 'navLogoutBtn';
+                    logoutBtn.className = 'btn btn-outline-light btn-sm fw-bold me-2 shadow-sm no-print';
+                    logoutBtn.title = 'Logout / ಲಾಗ್‌ಔಟ್';
+                    logoutBtn.onclick = function() {
+                        if (currentSession.role !== 'demo') {
+                            if (confirm('ಖಚಿತವಾಗಿ KSRMS ಲಾಗಿನ್‌ನಿಂದ ನಿರ್ಗಮಿಸಬೇಕೇ (Logout)?')) {
+                                clearCurrentSession();
+                                alert('ಯಶಸ್ವಿಯಾಗಿ ಲಾಗ್‌ಔಟ್ ಆಗಿದ್ದೀರಿ.');
+                            }
+                        } else {
+                            openLoginModal();
+                        }
+                    };
+                    logoutBtn.innerHTML = `<i class="fa-solid fa-right-from-bracket me-1 text-warning"></i> Logout`;
+                    navRightGroup.insertBefore(logoutBtn, sessionBadge);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', applyUpdates);
+            } else {
+                applyUpdates();
+            }
+        })();
         
     </script>
 </body>
