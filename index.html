@@ -15951,6 +15951,67 @@
                 document.getElementById('spaciousTableCellStyleFix').innerHTML = styleEl.innerHTML;
             }
         })();
+
+// ----------------------------------------------------------------------
+        // TALL & SPACIOUS SUBJECT ROW HEIGHT FIX FOR PROGRESS CARD
+        // ----------------------------------------------------------------------
+        (function applyTallSubjectRowsStyle() {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'tallSubjectRowsStyleFix';
+            styleEl.innerHTML = `
+                /* Increase Vertical Height / Padding for Each Subject Row */
+                .individual-report-card table th,
+                .individual-report-card table td {
+                    padding: 10px 12px !important; /* TALL & SPACIOUS ROW HEIGHT */
+                    font-size: 0.88rem !important;
+                    line-height: 1.4 !important;
+                    vertical-align: middle !important;
+                }
+
+                .individual-report-card .table-dark th {
+                    background-color: #2c3e50 !important;
+                    color: #ffffff !important;
+                    padding: 10px 12px !important;
+                }
+
+                .individual-report-card .bg-secondary th {
+                    background-color: #4a5568 !important;
+                    color: #ffffff !important;
+                    padding: 10px 12px !important;
+                }
+
+                .individual-report-card h6 {
+                    margin-top: 14px !important;
+                    margin-bottom: 6px !important;
+                    padding-bottom: 4px !important;
+                }
+
+                .individual-report-card .student-info-box {
+                    padding: 10px 14px !important;
+                    margin-bottom: 12px !important;
+                }
+
+                .individual-report-card .sig-box-container {
+                    min-height: 80px !important;
+                    max-height: 85px !important;
+                    padding: 6px !important;
+                }
+
+                @media print {
+                    .individual-report-card table th,
+                    .individual-report-card table td {
+                        padding: 9px 10px !important; /* TALL & SPACIOUS ROWS IN PRINT TOO */
+                        font-size: 0.87rem !important;
+                    }
+                }
+            `;
+
+            if (!document.getElementById('tallSubjectRowsStyleFix')) {
+                document.head.appendChild(styleEl);
+            } else {
+                document.getElementById('tallSubjectRowsStyleFix').innerHTML = styleEl.innerHTML;
+            }
+        })();
         
     </script>
 </body>
