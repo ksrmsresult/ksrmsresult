@@ -14492,6 +14492,113 @@
                     </div>
                 </div>`;
         };
+
+// ----------------------------------------------------------------------
+        // STRICT A4 PORTRAIT FIT FOR ALL PROGRESS CARDS (1st to 10th)
+        // ----------------------------------------------------------------------
+        (function enforceA4PortraitForProgressCards() {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'a4PortraitCardStrictStyle';
+            styleEl.innerHTML = `
+                /* Progress Card Container - A4 Portrait Proportional Fit */
+                #individualCardPaper.individual-report-card {
+                    width: 100% !important;
+                    max-width: 198mm !important;
+                    min-height: 260mm !important;
+                    max-height: 272mm !important;
+                    margin: 0 auto !important;
+                    padding: 10px 14px !important;
+                    background: #ffffff !important;
+                    border: 2px solid #800020 !important;
+                    border-radius: 8px !important;
+                    box-sizing: border-box !important;
+                    position: relative !important;
+                    font-family: 'Anek Kannada', 'Poppins', sans-serif !important;
+                    overflow: hidden !important;
+                }
+
+                .individual-report-card .table th,
+                .individual-report-card .table td {
+                    padding: 4px 3px !important;
+                    font-size: 0.8rem !important;
+                    line-height: 1.15 !important;
+                    vertical-align: middle !important;
+                }
+
+                .individual-report-card .sig-box-container {
+                    min-height: 65px !important;
+                    max-height: 72px !important;
+                    padding: 3px !important;
+                }
+
+                .individual-report-card .sig-preview {
+                    max-height: 30px !important;
+                }
+
+                .individual-report-card .seal-circle-placeholder {
+                    width: 34px !important;
+                    height: 34px !important;
+                    font-size: 0.48rem !important;
+                }
+
+                /* STRICT PRINT RULES FOR PORTRAIT PROGRESS CARDS */
+                @media print {
+                    @page {
+                        size: A4 portrait !important;
+                        margin: 4mm 5mm !important;
+                    }
+
+                    .no-print, nav, header, footer, .btn, .alert, .modal, .card-header, #schoolHeaderInfoBar {
+                        display: none !important;
+                    }
+
+                    #reportsSection { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+                    #reportsSection > .card { border: none !important; box-shadow: none !important; background: transparent !important; }
+                    #reportsSection .card-body { padding: 0 !important; margin: 0 !important; background: transparent !important; }
+
+                    #printContainer {
+                        display: block !important;
+                        visibility: visible !important;
+                        width: 100% !important;
+                        margin: 0 auto !important;
+                        padding: 0 !important;
+                        background: #fff !important;
+                    }
+
+                    #individualCardPaper.individual-report-card {
+                        width: 100% !important;
+                        max-width: 198mm !important;
+                        height: 268mm !important;
+                        padding: 8px 12px !important;
+                        border: 2px solid #800020 !important;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                        page-break-before: avoid !important;
+                        page-break-after: avoid !important;
+                    }
+                }
+            `;
+            if (!document.getElementById('a4PortraitCardStrictStyle')) {
+                document.head.appendChild(styleEl);
+            }
+        })();
+
+        // Force Page Orientation to A4 Portrait when Progress Cards generate
+        const _baseRenderIndReport = renderIndividualReport;
+        renderIndividualReport = function() {
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 portrait !important; margin: 4mm !important; }`;
+            if (typeof _baseRenderIndReport === 'function') {
+                _baseRenderIndReport();
+            }
+        };
+
+        const _baseRenderHSReport = renderHighSchoolIndividualProgressCard;
+        renderHighSchoolIndividualProgressCard = function(st) {
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 portrait !important; margin: 4mm !important; }`;
+            if (typeof _baseRenderHSReport === 'function') {
+                _baseRenderHSReport(st);
+            }
+        };
         
     </script>
 </body>
