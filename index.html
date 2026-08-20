@@ -16269,6 +16269,99 @@
                 updateUI();
             }
         })();
+
+// ----------------------------------------------------------------------
+        // PRIMARY MARKS GRID BILINGUAL HEADER FIX (STUDENT NAME & RESULT)
+        // ----------------------------------------------------------------------
+        renderMarksGrid = function() {
+            const selectedClass = document.getElementById('filterClassMarks').value;
+            const sub = document.getElementById('selectedSubjectSelect').value;
+            let subText = document.getElementById('selectedSubjectSelect').options[document.getElementById('selectedSubjectSelect').selectedIndex].text;
+            subText = getSubjectLabelWithLanguage(sub, subText);
+
+            const tbody = document.getElementById('marksGridBody');
+            const thead = document.getElementById('marksGridHeader');
+            if (!tbody || !thead) return;
+
+            const activeIndicator = document.getElementById('activeSubjectIndicator');
+            if (activeIndicator) activeIndicator.innerText = subText;
+
+            const filtered = selectedClass === 'ALL' ? sampleStudents : sampleStudents.filter(s => s && isSameClass(s.className, selectedClass));
+
+            const isLowerClass = selectedClass !== 'ALL' && (selectedClass.startsWith('1st') || selectedClass.startsWith('2nd') || selectedClass.startsWith('3rd') || selectedClass.startsWith('4th') || selectedClass.startsWith('5th'));
+            const faLabel = isLowerClass ? '15%' : '10%';
+            const saLabel = isLowerClass ? '20%' : '30%';
+
+            thead.innerHTML = `
+                <tr>
+                    <th rowspan="2" class="align-middle">#</th>
+                    <th rowspan="2" class="align-middle" style="min-width:160px;">${t('ವಿದ್ಯಾರ್ಥಿ ಹೆಸರು', 'Student Name')}</th>
+                    <th colspan="3" class="bg-primary text-white">FA1 (20)</th>
+                    <th colspan="3" class="bg-primary text-white">FA2 (20)</th>
+                    <th colspan="3" class="bg-primary text-white">SA1 (50)</th>
+                    <th class="bg-warning text-dark align-middle">T1 Total (50%)</th>
+                    <th colspan="3" class="bg-info text-dark">FA3 (20)</th>
+                    <th colspan="3" class="bg-info text-dark">FA4 (20)</th>
+                    <th colspan="3" class="bg-info text-dark">SA2 (50)</th>
+                    <th class="bg-warning text-dark align-middle">T2 Total (50%)</th>
+                    <th class="bg-success text-white align-middle">${t('ಒಟ್ಟು ಅಂಕ', 'Grand Total')}</th>
+                </tr>
+                <tr>
+                    <th>Marks</th><th>${faLabel}</th><th>Gr</th>
+                    <th>Marks</th><th>${faLabel}</th><th>Gr</th>
+                    <th>Marks</th><th>${saLabel}</th><th>Gr</th>
+                    <th class="bg-warning text-dark">Total</th>
+                    <th>Marks</th><th>${faLabel}</th><th>Gr</th>
+                    <th>Marks</th><th>${faLabel}</th><th>Gr</th>
+                    <th>Marks</th><th>${saLabel}</th><th>Gr</th>
+                    <th class="bg-warning text-dark">Total</th>
+                    <th colspan="3" class="bg-success text-white">${t('ಫಲಿತಾಂಶ', 'Result')}</th>
+                </tr>`;
+
+            tbody.innerHTML = filtered.map((s, idx) => {
+                const isCwsnExempt = s.cwsnStatus === 'Yes-Exempt';
+                const m = s.marks[sub] || {};
+                const calc = calculateSubjectScores(m, isCwsnExempt, s.className);
+
+                if (isCwsnExempt) {
+                    return `
+                    <tr data-st-id="${s.id}" class="table-danger">
+                        <td>${idx + 1}</td>
+                        <td class="text-start fw-bold ps-2">${s.name} <span class="badge bg-danger ms-1">CWSN</span></td>
+                        <td colspan="20" class="fw-bold text-danger text-center align-middle fs-6">CWSN (Exam Exempted)</td>
+                    </tr>`;
+                }
+
+                return `
+                <tr data-st-id="${s.id}">
+                    <td>${idx + 1}</td>
+                    <td class="text-start fw-bold ps-2">${s.name}</td>
+                    
+                    <td><input type="number" class="mark-input" data-key="fa1" value="${m.fa1!==undefined?m.fa1:''}" oninput="updateStudentMarkInlineFast(this, '${s.id}', '${sub}', 'fa1')" onkeydown="handleGridKeyNav(event, this)"></td>
+                    <td class="col-cfa1">${calc.cFA1}</td><td><span class="badge bg-light text-dark border col-gfa1">${calc.gFA1}</span></td>
+                    
+                    <td><input type="number" class="mark-input" data-key="fa2" value="${m.fa2!==undefined?m.fa2:''}" oninput="updateStudentMarkInlineFast(this, '${s.id}', '${sub}', 'fa2')" onkeydown="handleGridKeyNav(event, this)"></td>
+                    <td class="col-cfa2">${calc.cFA2}</td><td><span class="badge bg-light text-dark border col-gfa2">${calc.gFA2}</span></td>
+                    
+                    <td><input type="number" class="mark-input" data-key="sa1" value="${m.sa1!==undefined?m.sa1:''}" oninput="updateStudentMarkInlineFast(this, '${s.id}', '${sub}', 'sa1')" onkeydown="handleGridKeyNav(event, this)"></td>
+                    <td class="col-csa1">${calc.cSA1}</td><td><span class="badge bg-light text-dark border col-gsa1">${calc.gSA1}</span></td>
+                    
+                    <td class="bg-warning fw-bold col-t1tot">${calc.t1Tot}</td>
+                    
+                    <td><input type="number" class="mark-input" data-key="fa3" value="${m.fa3!==undefined?m.fa3:''}" oninput="updateStudentMarkInlineFast(this, '${s.id}', '${sub}', 'fa3')" onkeydown="handleGridKeyNav(event, this)"></td>
+                    <td class="col-cfa3">${calc.cFA3}</td><td><span class="badge bg-light text-dark border col-gfa3">${calc.gFA3}</span></td>
+                    
+                    <td><input type="number" class="mark-input" data-key="fa4" value="${m.fa4!==undefined?m.fa4:''}" oninput="updateStudentMarkInlineFast(this, '${s.id}', '${sub}', 'fa4')" onkeydown="handleGridKeyNav(event, this)"></td>
+                    <td class="col-cfa4">${calc.cFA4}</td><td><span class="badge bg-light text-dark border col-gfa4">${calc.gFA4}</span></td>
+                    
+                    <td><input type="number" class="mark-input" data-key="sa2" value="${m.sa2!==undefined?m.sa2:''}" oninput="updateStudentMarkInlineFast(this, '${s.id}', '${sub}', 'sa2')" onkeydown="handleGridKeyNav(event, this)"></td>
+                    <td class="col-csa2">${calc.cSA2}</td><td><span class="badge bg-light text-dark border col-gsa2">${calc.gSA2}</span></td>
+                    
+                    <td class="bg-warning fw-bold col-t2tot">${calc.t2Tot}</td>
+                    <td class="fw-bold text-success fs-7 col-grandtot">${calc.subjectGrandTot} (${calc.gGrand})</td>
+                </tr>`;
+            }).join('');
+        };
         
     </script>
 </body>
