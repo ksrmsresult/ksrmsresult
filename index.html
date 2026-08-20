@@ -13722,6 +13722,287 @@
                 console.error("Cloud Save Error:", e);
             }
         };
+
+        // ----------------------------------------------------------------------
+        // EXACT MATCH EXCEL GRADE CHART ENGINE (9th & 10th 625 MARKS + NC GRADE)
+        // ----------------------------------------------------------------------
+        calculateHighSchoolGrade = function(score, maxScore) {
+            if (score === null || score === undefined || score === "" || isNaN(score)) return "-";
+            const val = parseFloat(score);
+
+            // 1. FA Raw (Out of 50)
+            if (maxScore === 50) {
+                if (val >= 45) return "A+";
+                if (val >= 40) return "A";
+                if (val >= 35) return "B+";
+                if (val >= 30) return "B";
+                if (val >= 25) return "C+";
+                if (val >= 18) return "C";
+                return "NC";
+            }
+
+            // 2. FA Converted 20% (Out of 20)
+            if (maxScore === 20) {
+                if (val >= 18) return "A+";
+                if (val >= 16) return "A";
+                if (val >= 14) return "B+";
+                if (val >= 12) return "B";
+                if (val >= 10) return "C+";
+                if (val >= 7) return "C";
+                return "NC";
+            }
+
+            // 3. FA Converted 25% (Out of 25)
+            if (maxScore === 25) {
+                if (val >= 22) return "A+";
+                if (val >= 20) return "A";
+                if (val >= 17) return "B+";
+                if (val >= 15) return "B";
+                if (val >= 13) return "C+";
+                if (val >= 9) return "C";
+                return "NC";
+            }
+
+            // 4. Total 100 Marks (Core Subjects & 2nd/3rd Languages)
+            if (maxScore === 100) {
+                if (val >= 90) return "A+";
+                if (val >= 80) return "A";
+                if (val >= 70) return "B+";
+                if (val >= 60) return "B";
+                if (val >= 50) return "C+";
+                if (val >= 35) return "C";
+                return "NC";
+            }
+
+            // 5. Total 125 Marks (First Language for Both 9th & 10th)
+            if (maxScore === 125) {
+                if (val >= 112) return "A+";
+                if (val >= 100) return "A";
+                if (val >= 87) return "B+";
+                if (val >= 75) return "B";
+                if (val >= 63) return "C+";
+                if (val >= 44) return "C";
+                return "NC";
+            }
+
+            // 6. Total 625 Marks (Grand Total Aggregate for BOTH 9th & 10th)
+            if (maxScore === 625 || maxScore === 600) {
+                if (val >= 563) return "A+";
+                if (val >= 500) return "A";
+                if (val >= 438) return "B+";
+                if (val >= 375) return "B";
+                if (val >= 313) return "C+";
+                if (val >= 219) return "C";
+                return "NC";
+            }
+
+            const perc = (val / maxScore) * 100;
+            if (perc >= 90) return "A+";
+            if (perc >= 80) return "A";
+            if (perc >= 70) return "B+";
+            if (perc >= 60) return "B";
+            if (perc >= 50) return "C+";
+            if (perc >= 35) return "C";
+            return "NC";
+        };
+
+        // Subject Final Marks Calculator (625 Total for BOTH 9th & 10th)
+        calculateSubjectFinalMarks = function(subId, marksObj, className) {
+            if (!marksObj) marksObj = createBlankHighSchoolSubjectMarks(subId);
+
+            const isFL = (subId === 's1'); // First Language is 125 Total for BOTH 9th & 10th!
+
+            const maxMarks = isFL ? 125 : 100;
+            const maxInternal = isFL ? 25 : 20;
+            const maxExam = isFL ? 100 : 80;
+            const passMin = isFL ? 44 : 35;
+
+            // Formative Raw Marks
+            const fa1Tot = (parseFloat(marksObj.fa1?.act1) || 0) + (parseFloat(marksObj.fa1?.act2) || 0) + (parseFloat(marksObj.fa1?.written) || 0);
+            const fa2Tot = (parseFloat(marksObj.fa2?.act1) || 0) + (parseFloat(marksObj.fa2?.act2) || 0) + (parseFloat(marksObj.fa2?.written) || 0);
+            const fa3Tot = (parseFloat(marksObj.fa3?.act1) || 0) + (parseFloat(marksObj.fa3?.act2) || 0) + (parseFloat(marksObj.fa3?.written) || 0);
+            const fa4Tot = (parseFloat(marksObj.fa4?.act1) || 0) + (parseFloat(marksObj.fa4?.act2) || 0) + (parseFloat(marksObj.fa4?.written) || 0);
+
+            const fa1Grade = calculateHighSchoolGrade(fa1Tot, 50);
+            const fa2Grade = calculateHighSchoolGrade(fa2Tot, 50);
+            const fa3Grade = calculateHighSchoolGrade(fa3Tot, 50);
+            const fa4Grade = calculateHighSchoolGrade(fa4Tot, 50);
+
+            // SA1
+            const sa1Raw = parseFloat(marksObj.sa1?.preparatory100) || 0;
+            const sa1ExamScore = isFL ? sa1Raw : Math.round(sa1Raw * 0.8);
+            const fa1fa2Sum = fa1Tot + fa2Tot;
+            const fa1fa2Conv = fa1fa2Sum > 0 ? Math.ceil((fa1fa2Sum / 100) * maxInternal) : 0;
+            const sa1Total = Math.round(sa1ExamScore + fa1fa2Conv);
+            const sa1Grade = calculateHighSchoolGrade(sa1Total, maxMarks);
+
+            // FA3 + FA4
+            const fa3fa4Sum = fa3Tot + fa4Tot;
+            const fa3fa4Conv = fa3fa4Sum > 0 ? Math.ceil((fa3fa4Sum / 100) * maxInternal) : 0;
+
+            // Overall FA Summary
+            const fa200Sum = fa1Tot + fa2Tot + fa3Tot + fa4Tot;
+            const fa20Conv = fa200Sum > 0 ? Math.ceil((fa200Sum / 200) * maxInternal) : 0;
+            const fa20Grade = calculateHighSchoolGrade((fa200Sum / 200) * 100, 100);
+
+            // SA2
+            const sa2Raw = parseFloat(marksObj.sa2?.preparatory100) || 0;
+            const sa2ExamScore = isFL ? sa2Raw : Math.round(sa2Raw * 0.8);
+            const sa2Total = Math.round(sa2ExamScore + fa3fa4Conv);
+            const sa2Grade = calculateHighSchoolGrade(sa2Total, maxMarks);
+
+            // Annual Grand Total
+            const activeExamScore = sa2Raw > 0 ? sa2ExamScore : sa1ExamScore;
+            const grandTotal = Math.round(fa20Conv + activeExamScore);
+            const grandGrade = calculateHighSchoolGrade(grandTotal, maxMarks);
+            const pass = grandTotal >= passMin;
+
+            return {
+                fa1Tot, fa1Grade,
+                fa2Tot, fa2Grade,
+                fa3Tot, fa3Grade,
+                fa4Tot, fa4Grade,
+                sa1Raw: sa1ExamScore,
+                sa1ExamScore,
+                fa1fa2Conv,
+                sa1Converted: fa1fa2Conv,
+                sa1Total,
+                sa1Grade,
+                fa3fa4Sum,
+                fa3fa4Conv,
+                sa2Converted: fa3fa4Conv,
+                sa2Raw: sa2ExamScore,
+                sa2ExamScore,
+                sa2Total,
+                sa2Grade,
+                fa200Sum,
+                fa20Conv,
+                fa20Grade,
+                grandTotal,
+                grandGrade,
+                grade: grandGrade,
+                pass,
+                maxMarks,
+                maxInternal,
+                maxExam
+            };
+        };
+
+        // Class 9 Consolidated Register Override to 625 Total
+        renderClass9ConsolidatedRegister = function(className) {
+            const filteredStudents = sampleStudents.filter(s => s && isSameClass(s.className, className));
+            const ctName = getCurrentClassTeacherName(className, 'A');
+
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 landscape; margin: 4mm; }`;
+
+            let rowsHtml = filteredStudents.map((s, idx) => {
+                const isCwsnExempt = s.cwsnStatus === 'Yes-Exempt';
+
+                const sub1 = calculateSubjectFinalMarks('s1', s.hsMarks?.s1, className);
+                const sub2 = calculateSubjectFinalMarks('s2', s.hsMarks?.s2, className);
+                const sub3 = calculateSubjectFinalMarks('s3', s.hsMarks?.s3, className);
+                const sub4 = calculateSubjectFinalMarks('s4', s.hsMarks?.s4, className);
+                const sub5 = calculateSubjectFinalMarks('s5', s.hsMarks?.s5, className);
+                const sub6 = calculateSubjectFinalMarks('s6', s.hsMarks?.s6, className);
+
+                const hasAnyMarks = (sub1.grandTotal > 0 || sub2.grandTotal > 0 || sub3.grandTotal > 0 || sub4.grandTotal > 0 || sub5.grandTotal > 0 || sub6.grandTotal > 0);
+
+                const grandTotalObtained = sub1.grandTotal + sub2.grandTotal + sub3.grandTotal + sub4.grandTotal + sub5.grandTotal + sub6.grandTotal;
+                const maxGrandTotal = 625; // 625 Marks for BOTH 9th and 10th!
+
+                const allPassed = sub1.pass && sub2.pass && sub3.pass && sub4.pass && sub5.pass && sub6.pass;
+                const overallPerc = hasAnyMarks ? ((grandTotalObtained / maxGrandTotal) * 100).toFixed(1) : 0;
+                const overallGrade = hasAnyMarks ? calculateHighSchoolGrade(grandTotalObtained, maxGrandTotal) : '-';
+
+                let resultText = '-';
+                if (isCwsnExempt) resultText = 'CWSN';
+                else if (hasAnyMarks) resultText = allPassed ? 'PROMOTED' : 'DETAINED';
+
+                const co = s.co || { c1:'A', c2:'A', c3:'A', c4:'A' };
+
+                return `
+                    <tr class="text-center align-middle fs-8 ${hasAnyMarks && !allPassed && !isCwsnExempt ? 'table-danger bg-opacity-10' : ''}">
+                        <td>${idx + 1}</td>
+                        <td class="fw-bold">${s.admissionNo || '-'}</td>
+                        <td class="fw-bold text-start ps-1">${s.name} ${isCwsnExempt ? '<span class="badge bg-danger ms-1">CWSN</span>' : ''}</td>
+                        <td>${s.sats || '-'}</td>
+
+                        <td>${sub1.grandTotal > 0 ? sub1.grandTotal : '-'}</td><td class="fw-bold">${sub1.grandTotal > 0 ? sub1.grade : '-'}</td>
+                        <td>${sub2.grandTotal > 0 ? sub2.grandTotal : '-'}</td><td class="fw-bold">${sub2.grandTotal > 0 ? sub2.grade : '-'}</td>
+                        <td>${sub3.grandTotal > 0 ? sub3.grandTotal : '-'}</td><td class="fw-bold">${sub3.grandTotal > 0 ? sub3.grade : '-'}</td>
+                        <td>${sub4.grandTotal > 0 ? sub4.grandTotal : '-'}</td><td class="fw-bold">${sub4.grandTotal > 0 ? sub4.grade : '-'}</td>
+                        <td>${sub5.grandTotal > 0 ? sub5.grandTotal : '-'}</td><td class="fw-bold">${sub5.grandTotal > 0 ? sub5.grade : '-'}</td>
+                        <td>${sub6.grandTotal > 0 ? sub6.grandTotal : '-'}</td><td class="fw-bold">${sub6.grandTotal > 0 ? sub6.grade : '-'}</td>
+
+                        <td class="fw-bold fs-7 text-primary bg-warning bg-opacity-10">${hasAnyMarks ? `${grandTotalObtained} / 625` : '-'}</td>
+                        <td class="fw-bold">${hasAnyMarks ? `${overallPerc}%` : '-'}</td>
+                        <td><span class="badge ${hasAnyMarks ? (allPassed ? 'bg-success' : 'bg-danger') : 'bg-secondary'}">${overallGrade}</span></td>
+                        <td class="fw-bold ${hasAnyMarks ? (allPassed ? 'text-success' : 'text-danger') : 'text-muted'}">${resultText}</td>
+
+                        <td class="fw-bold">${co.c1 || 'A'}</td>
+                        <td class="fw-bold">${co.c2 || 'A'}</td>
+                        <td class="fw-bold">${co.c3 || 'A'}</td>
+                        <td class="fw-bold">${co.c4 || 'A'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const container = document.getElementById('printContainer');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="consolidated-register-paper p-2" style="font-family: 'Anek Kannada', 'Poppins', sans-serif;">
+                    <div class="text-center mb-2">
+                        <div class="fw-bold fs-6">${t('ಸಾರ್ವಜನಿಕ ಶಿಕ್ಷಣ ಇಲಾಖೆ - ಕರ್ನಾಟಕ ಸರ್ಕಾರ', 'Department of Public Instruction - Govt of Karnataka')}</div>
+                        <div class="fw-bold text-primary fs-4 report-school-name">${appSettings.schoolName}</div>
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-1 px-3 fs-8 fw-bold">
+                            <span>${t('ಡೈಸ್ ಕೋಡ್:', 'DISE Code:')} ${appSettings.diseCode} | ${t('ಬ್ಲಾಕ್:', 'Block:')} ${appSettings.block}</span>
+                            <span class="fs-6 text-dark">${appSettings.academicYear} - ${t('9ನೇ ತರಗತಿ ವಾರ್ಷಿಕ ಕ್ರೂಢೀಕೃತ ಫಲಿತಾಂಶ ಪತ್ರಿಕೆ', 'Class 9 Consolidated Result Register')}</span>
+                            <span>${t('ಒಟ್ಟು ಅಂಕಗಳು:', 'Max Marks:')} 625 | ${t('ತರಗತಿ:', 'Class:')} ${className}</span>
+                        </div>
+                    </div>
+
+                    <table class="cce-broadsheet-table w-100 mb-3" id="broadsheetTableToExport" style="font-size: 0.75rem;">
+                        <thead>
+                            <tr class="bg-dark text-white text-center">
+                                <th rowspan="2" class="align-middle">#</th>
+                                <th rowspan="2" class="align-middle">${t('ದಾ.ಸಂ', 'Adm No')}</th>
+                                <th rowspan="2" class="align-middle" style="min-width: 150px;">${t('ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು', 'Student Name')}</th>
+                                <th rowspan="2" class="align-middle">${t('SATS ಸಂಖ್ಯೆ', 'SATS No')}</th>
+                                <th colspan="2">${t('ಪ್ರಥಮ ಭಾಷೆ (125)', 'First Language (125)')}</th>
+                                <th colspan="2">${t('ದ್ವಿತೀಯ ಭಾಷೆ (100)', 'Second Language (100)')}</th>
+                                <th colspan="2">${t('ತೃತೀಯ ಭಾಷೆ (100)', 'Third Language (100)')}</th>
+                                <th colspan="2">${t('ಗಣಿತ (100)', 'Mathematics (100)')}</th>
+                                <th colspan="2">${t('ವಿಜ್ಞಾನ (100)', 'Science (100)')}</th>
+                                <th colspan="2">${t('ಸಮಾಜ ವಿಜ್ಞಾನ (100)', 'Social Science (100)')}</th>
+                                <th colspan="4" class="bg-success text-white">${t('ಒಟ್ಟು ಶೈಕ್ಷಣಿಕ ಫಲಿತಾಂಶ', 'Total Academic Result')}</th>
+                                <th colspan="4" class="bg-secondary text-white">${t('ಸಹಪಠ್ಯ ಶ್ರೇಣಿಗಳು', 'Co-Scholastic Grades')}</th>
+                            </tr>
+                            <tr class="bg-light text-center">
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಅಂಕ', 'Marks')}</th><th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th class="bg-warning text-dark">${t('ಒಟ್ಟು (625)', 'Total (625)')}</th>
+                                <th>${t('ಶೇಕಡಾ (%)', '% Percentage')}</th>
+                                <th>${t('ಶ್ರೇಣಿ', 'Grade')}</th>
+                                <th>${t('ಫಲಿತಾಂಶ', 'Result')}</th>
+                                <th>${t('ಮೌಲ್ಯ ಶಿಕ್ಷಣ', 'Value Edu')}</th><th>${t('ಕಾರ್ಯಾನುಭವ', 'Work Exp')}</th><th>${t('ಕಲಾ ಶಿಕ್ಷಣ', 'Art Edu')}</th><th>${t('ದೈಹಿಕ ಶಿಕ್ಷಣ', 'PE')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+
+                    <div class="d-flex justify-content-between pt-4 mt-3 fs-8 fw-bold">
+                        <div class="text-center"><div>______________________</div><div>${t('ವರ್ಗ ಶಿಕ್ಷಕರ ಸಹಿ', 'Class Teacher Signature')}</div><small>${ctName}</small></div>
+                        <div class="text-center"><div>______________________</div><div>${t('ಪರೀಕ್ಷಾ ವಿಷಯ ಶಿಕ್ಷಕರ ಸಹಿ', 'Subject Teacher Signature')}</div></div>
+                        <div class="text-center"><div>______________________</div><div>${t('ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಹಿ &amp; ಮೊಹರು', 'Headmaster Signature &amp; Seal')}</div><small>${appSettings.hmName}</small></div>
+                    </div>
+                </div>
+            `;
+        };
         
     </script>
 </body>
