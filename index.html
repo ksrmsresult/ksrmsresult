@@ -16211,6 +16211,64 @@
                 applyUpdates();
             }
         })();
+
+        // ----------------------------------------------------------------------
+        // COMPACT RESET BUTTON & ALWAYS-VISIBLE MOBILE LOGOUT BUTTON FIX
+        // ----------------------------------------------------------------------
+        (function applySmallerResetAndMobileLogoutFix() {
+            function updateUI() {
+                // 1. Make Reset Data Button in Settings Danger Zone Compact
+                const resetBtn = document.querySelector('#settingsDangerZone button');
+                if (resetBtn) {
+                    resetBtn.className = "btn btn-outline-danger btn-sm fw-bold px-3 py-1 shadow-sm";
+                    resetBtn.style.fontSize = "0.85rem";
+                }
+
+                // 2. Mobile Top Bar Logout / Login Button (Always Visible on Mobile Screen!)
+                const navContainer = document.querySelector('nav .container-fluid');
+                const togglerBtn = document.querySelector('.navbar-toggler');
+                
+                if (navContainer && togglerBtn && !document.getElementById('mobileTopLogoutBtn')) {
+                    const mobileLogoutBtn = document.createElement('button');
+                    mobileLogoutBtn.id = 'mobileTopLogoutBtn';
+                    mobileLogoutBtn.className = 'btn btn-outline-warning btn-sm fw-bold d-xl-none ms-auto me-1 no-print shadow-sm';
+                    mobileLogoutBtn.onclick = function(e) {
+                        e.preventDefault();
+                        if (currentSession && currentSession.role !== 'demo') {
+                            if (confirm('ಖಚಿತವಾಗಿ KSRMS ಲಾಗಿನ್‌ನಿಂದ ನಿರ್ಗಮಿಸಬೇಕೇ (Logout)?')) {
+                                clearCurrentSession();
+                                alert('ಯಶಸ್ವಿಯಾಗಿ ಲಾಗ್‌ಔಟ್ ಆಗಿದ್ದೀರಿ.');
+                            }
+                        } else {
+                            openLoginModal();
+                        }
+                    };
+
+                    const isLogged = (currentSession && currentSession.role !== 'demo');
+                    mobileLogoutBtn.innerHTML = isLogged ? `<i class="fa-solid fa-right-from-bracket text-warning me-1"></i> Logout` : `<i class="fa-solid fa-user text-warning me-1"></i> Login`;
+
+                    const topAdminBtn = document.getElementById('mobileTopAdminBtn');
+                    if (topAdminBtn) {
+                        navContainer.insertBefore(mobileLogoutBtn, topAdminBtn);
+                    } else {
+                        navContainer.insertBefore(mobileLogoutBtn, togglerBtn);
+                    }
+                }
+
+                // Auto Update Mobile Logout Button Icon & Label
+                const mobBtn = document.getElementById('mobileTopLogoutBtn');
+                if (mobBtn && typeof currentSession !== 'undefined') {
+                    const isLogged = (currentSession.role !== 'demo');
+                    mobBtn.innerHTML = isLogged ? `<i class="fa-solid fa-right-from-bracket text-warning me-1"></i> Logout` : `<i class="fa-solid fa-user text-warning me-1"></i> Login`;
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', updateUI);
+            } else {
+                updateUI();
+            }
+        })();
         
     </script>
 </body>
