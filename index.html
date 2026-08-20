@@ -13533,6 +13533,94 @@
                 `;
             }).join('');
         };
+
+// ----------------------------------------------------------------------
+        // PERFECT 1-PAGE A4 PROGRESS CARD FIT FIX FOR MOBILE & LAPTOP
+        // ----------------------------------------------------------------------
+        (function applyMobileProgressCard1PageFix() {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'mobileCard1PageStyle';
+            styleEl.innerHTML = `
+                /* Fixed A4 Proportional Container for Mobile & Laptop */
+                .individual-report-card {
+                    width: 192mm !important;
+                    max-width: 192mm !important;
+                    box-sizing: border-box !important;
+                    margin: 0 auto !important;
+                    padding: 8px 12px !important;
+                    background: #ffffff !important;
+                    font-family: 'Anek Kannada', 'Poppins', sans-serif !important;
+                    overflow: hidden !important;
+                }
+
+                /* Force Horizontal Flex Rows on Mobile so Student Info Never Stacks Vertically */
+                .individual-report-card .row {
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    margin-right: -4px !important;
+                    margin-left: -4px !important;
+                }
+
+                .individual-report-card .col-6 { width: 50% !important; flex: 0 0 50% !important; }
+                .individual-report-card .col-4 { width: 33.333% !important; flex: 0 0 33.333% !important; }
+                .individual-report-card .col-3 { width: 25% !important; flex: 0 0 25% !important; }
+                .individual-report-card .col-12 { width: 100% !important; flex: 0 0 100% !important; }
+
+                .individual-report-card .table th,
+                .individual-report-card .table td {
+                    padding: 4px 3px !important;
+                    font-size: 0.8rem !important;
+                    vertical-align: middle !important;
+                }
+
+                .individual-report-card .sig-box-container {
+                    min-height: 72px !important;
+                    max-height: 78px !important;
+                    padding: 3px !important;
+                }
+
+                .individual-report-card .sig-preview {
+                    max-height: 32px !important;
+                }
+
+                .individual-report-card .seal-circle-placeholder {
+                    width: 38px !important;
+                    height: 38px !important;
+                    font-size: 0.5rem !important;
+                }
+
+                /* Mobile Screen Zoom Scale so the entire card is visible on 380px phone screen */
+                @media screen and (max-width: 768px) {
+                    .print-preview-paper {
+                        overflow-x: auto !important;
+                    }
+                    .individual-report-card {
+                        transform-origin: top center;
+                    }
+                }
+
+                /* Strict Print 1-Page Boundary */
+                @media print {
+                    @page {
+                        size: A4 portrait;
+                        margin: 4mm !important;
+                    }
+
+                    .individual-report-card {
+                        width: 100% !important;
+                        max-width: 192mm !important;
+                        padding: 6px 10px !important;
+                        border: 2px solid #800020 !important;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+                }
+            `;
+
+            if (!document.getElementById('mobileCard1PageStyle')) {
+                document.head.appendChild(styleEl);
+            }
+        })();
         
     </script>
 </body>
