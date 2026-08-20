@@ -15889,6 +15889,68 @@
                     </div>
                 </div>`;
         };
+
+        // ----------------------------------------------------------------------
+        // SPACIOUS & ELEGANT TABLE CELL PADDING FIX (NO MORE CRAMPED NUMBERS)
+        // ----------------------------------------------------------------------
+        (function applySpaciousTableCellStyle() {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'spaciousTableCellStyleFix';
+            styleEl.innerHTML = `
+                /* Generous, Spacious Table Row Padding for Comfortable Reading */
+                .individual-report-card table th,
+                .individual-report-card table td {
+                    padding: 8px 10px !important; /* Generous breathing room between marks and borders */
+                    font-size: 0.86rem !important;
+                    line-height: 1.35 !important;
+                    vertical-align: middle !important;
+                }
+
+                .individual-report-card .table-dark th {
+                    background-color: #2c3e50 !important;
+                    color: #ffffff !important;
+                    padding: 9px 10px !important;
+                }
+
+                .individual-report-card .bg-secondary th {
+                    background-color: #4a5568 !important;
+                    color: #ffffff !important;
+                    padding: 9px 10px !important;
+                }
+
+                /* Spacious Headings & Student Info Box */
+                .individual-report-card h6 {
+                    margin-top: 12px !important;
+                    margin-bottom: 6px !important;
+                    padding-bottom: 4px !important;
+                }
+
+                .individual-report-card .student-info-box {
+                    padding: 10px 14px !important;
+                    margin-bottom: 12px !important;
+                }
+
+                .individual-report-card .sig-box-container {
+                    min-height: 80px !important;
+                    max-height: 85px !important;
+                    padding: 6px !important;
+                }
+
+                @media print {
+                    .individual-report-card table th,
+                    .individual-report-card table td {
+                        padding: 7px 8px !important;
+                        font-size: 0.85rem !important;
+                    }
+                }
+            `;
+
+            if (!document.getElementById('spaciousTableCellStyleFix')) {
+                document.head.appendChild(styleEl);
+            } else {
+                document.getElementById('spaciousTableCellStyleFix').innerHTML = styleEl.innerHTML;
+            }
+        })();
         
     </script>
 </body>
