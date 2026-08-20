@@ -14279,6 +14279,219 @@
                 `;
             }).join('');
         };
+
+// ----------------------------------------------------------------------
+        // STRICT 1-PAGE A4 PORTRAIT FIT & 9th CLASS 125 MARKS FL PROGRESS CARD
+        // ----------------------------------------------------------------------
+        (function applyStrict1PageCardCSS() {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'strict1PageCardStyle';
+            styleEl.innerHTML = `
+                /* Compact A4 Single Page Progress Card Container */
+                .individual-report-card {
+                    width: 190mm !important;
+                    max-width: 190mm !important;
+                    max-height: 268mm !important; /* STRICT 1-PAGE A4 LIMIT */
+                    box-sizing: border-box !important;
+                    margin: 0 auto !important;
+                    padding: 6px 10px !important;
+                    background: #ffffff !important;
+                    font-family: 'Anek Kannada', 'Poppins', sans-serif !important;
+                    overflow: hidden !important;
+                }
+
+                .individual-report-card .table th,
+                .individual-report-card .table td {
+                    padding: 3px 2px !important;
+                    font-size: 0.78rem !important;
+                    line-height: 1.15 !important;
+                    vertical-align: middle !important;
+                }
+
+                .individual-report-card .sig-box-container {
+                    min-height: 60px !important;
+                    max-height: 65px !important;
+                    padding: 2px 3px !important;
+                }
+
+                .individual-report-card .sig-preview {
+                    max-height: 28px !important;
+                }
+
+                .individual-report-card .seal-circle-placeholder {
+                    width: 32px !important;
+                    height: 32px !important;
+                    font-size: 0.45rem !important;
+                }
+
+                @media print {
+                    @page {
+                        size: A4 portrait !important;
+                        margin: 3mm 4mm !important;
+                    }
+
+                    .individual-report-card {
+                        width: 100% !important;
+                        max-width: 190mm !important;
+                        max-height: 270mm !important;
+                        padding: 5px 8px !important;
+                        border: 2px solid #800020 !important;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                        page-break-before: avoid !important;
+                        page-break-after: avoid !important;
+                    }
+                }
+            `;
+            if (!document.getElementById('strict1PageCardStyle')) {
+                document.head.appendChild(styleEl);
+            }
+        })();
+
+        // High School Progress Card Fix for 125 Marks FL on Both 9th & 10th
+        renderHighSchoolIndividualProgressCard = function(st) {
+            const ctName = getCurrentClassTeacherName(st.className, 'A');
+            const isCwsnExempt = st.cwsnStatus === 'Yes-Exempt';
+            const cat = getClassCategory(st.className);
+
+            const rptExamEl = document.getElementById('rptExamSelect');
+            const marksExamEl = document.getElementById('examPrintFilter');
+            const examFilter = (rptExamEl && rptExamEl.value) ? rptExamEl.value : ((marksExamEl && marksExamEl.value) ? marksExamEl.value : 'Annual');
+
+            let examTitleStr = t('ಪ್ರೌಢಶಾಲಾ ವಿದ್ಯಾರ್ಥಿ ಶೈಕ್ಷಣಿಕ ಸಾಧನಾ ಪ್ರಗತಿ ಪತ್ರ', 'HIGH SCHOOL ACADEMIC PROGRESS CARD');
+            let isFaOnly = false;
+            let faKey = 'fa1';
+
+            if (examFilter === 'FA1') { isFaOnly = true; faKey = 'fa1'; examTitleStr = t('ಪ್ರೌಢಶಾಲಾ ವಿದ್ಯಾರ್ಥಿ FA-1 ಪ್ರಗತಿ ಪತ್ರ', 'HIGH SCHOOL FA-1 PROGRESS CARD'); }
+            else if (examFilter === 'FA2') { isFaOnly = true; faKey = 'fa2'; examTitleStr = t('ಪ್ರೌಢಶಾಲಾ ವಿದ್ಯಾರ್ಥಿ FA-2 ಪ್ರಗತಿ ಪತ್ರ', 'HIGH SCHOOL FA-2 PROGRESS CARD'); }
+            else if (examFilter === 'SA1') { examTitleStr = t('ಪ್ರೌಢಶಾಲಾ ವಿದ್ಯಾರ್ಥಿ SA-1 ಪ್ರಗತಿ ಪತ್ರ', 'HIGH SCHOOL SA-1 PROGRESS CARD'); }
+            else if (examFilter === 'FA3') { isFaOnly = true; faKey = 'fa3'; examTitleStr = t('ಪ್ರೌಢಶಾಲಾ ವಿದ್ಯಾರ್ಥಿ FA-3 ಪ್ರಗತಿ ಪತ್ರ', 'HIGH SCHOOL FA-3 PROGRESS CARD'); }
+            else if (examFilter === 'FA4') { isFaOnly = true; faKey = 'fa4'; examTitleStr = t('ಪ್ರೌಢಶಾಲಾ ವಿದ್ಯಾರ್ಥಿ FA-4 ಪ್ರಗತಿ ಪತ್ರ', 'HIGH SCHOOL FA-4 PROGRESS CARD'); }
+            else if (examFilter === 'SA2') { examTitleStr = t('ಪ್ರೌಢಶಾಲಾ ವಿದ್ಯಾರ್ಥಿ SA-2 ಪ್ರಗತಿ ಪತ್ರ', 'HIGH SCHOOL SA-2 PROGRESS CARD'); }
+
+            const subjectsList = [
+                { id: 's1', name: t(getSubjectLabelWithLanguage('s1', 'ಪ್ರಥಮ ಭಾಷೆ'), 'First Language (Kannada)') },
+                { id: 's2', name: t(getSubjectLabelWithLanguage('s2', 'ದ್ವಿತೀಯ ಭಾಷೆ'), 'Second Language (English)') },
+                { id: 's3', name: t(getSubjectLabelWithLanguage('s3', 'ತೃತೀಯ ಭಾಷೆ'), 'Third Language (Hindi)') },
+                { id: 's4', name: t('ಗಣಿತ', 'Mathematics') },
+                { id: 's5', name: t('ವಿಜ್ಞಾನ', 'Science') },
+                { id: 's6', name: t('ಸಮಾಜ ವಿಜ್ಞಾನ', 'Social Science') }
+            ];
+
+            let grandTotalObtained = 0;
+            // First Language is 125 Marks for BOTH 9th and 10th Standard! Grand Total = 625!
+            let maxGrandTotal = 625;
+            if (isFaOnly) maxGrandTotal = 300;
+
+            let allPassed = true;
+
+            let subjectsHtml = subjectsList.map((sub, idx) => {
+                const m = (st.hsMarks && st.hsMarks[sub.id]) ? st.hsMarks[sub.id] : createBlankHighSchoolSubjectMarks(sub.id);
+                const calc = calculateSubjectFinalMarks(sub.id, m, st.className);
+
+                // First Language is ALWAYS 125 Max Marks for Both 9th & 10th!
+                let subMax = (sub.id === 's1') ? 125 : 100;
+                let subObtained = calc.grandTotal;
+                let subGrade = calc.grandGrade;
+                let subPass = calc.pass;
+
+                if (isFaOnly) {
+                    subMax = 50;
+                    const faM = m[faKey] || {};
+                    const act1 = faM.act1 !== undefined && faM.act1 !== "" ? Number(faM.act1) : 0;
+                    const act2 = faM.act2 !== undefined && faM.act2 !== "" ? Number(faM.act2) : 0;
+                    const wr = faM.written !== undefined && faM.written !== "" ? Number(faM.written) : 0;
+                    subObtained = act1 + act2 + wr;
+                    subGrade = calculateHighSchoolGrade(subObtained, 50, true);
+                    subPass = subObtained >= 18;
+                }
+
+                if (!isCwsnExempt) {
+                    grandTotalObtained += subObtained;
+                    if (!subPass) allPassed = false;
+                }
+
+                return `
+                    <tr>
+                        <td style="padding: 3px 2px !important;">${idx + 1}</td>
+                        <td class="text-start ps-2 fw-bold" style="padding: 3px 2px !important;">${sub.name}</td>
+                        <td style="padding: 3px 2px !important;">${subMax}</td>
+                        <td class="fw-bold" style="padding: 3px 2px !important;">${isCwsnExempt ? 'CWSN' : subObtained}</td>
+                        <td style="padding: 3px 2px !important;"><span class="badge ${isCwsnExempt?'bg-danger':(subPass?'bg-success':'bg-danger')}">${isCwsnExempt ? 'CWSN' : subGrade}</span></td>
+                        <td style="padding: 3px 2px !important;">${isCwsnExempt ? 'CWSN' : (subPass ? 'Pass' : 'Fail')}</td>
+                    </tr>`;
+            }).join('');
+
+            const overallPerc = isCwsnExempt ? 'CWSN' : ((grandTotalObtained / maxGrandTotal) * 100).toFixed(1) + '%';
+            const overallGrade = isCwsnExempt ? 'CWSN' : calculateHighSchoolGrade(grandTotalObtained, maxGrandTotal);
+            const finalResultText = isCwsnExempt ? 'CWSN' : (allPassed ? 'PASSED / ಉತ್ತೀರ್ಣ' : 'FAILED / ಅನುತ್ತೀರ್ಣ');
+            const co = st.co || { c1:'A', c2:'A', c3:'A', c4:'A' };
+
+            document.getElementById('dynamicPageStyle').innerHTML = `@page { size: A4 portrait; margin: 3mm; }`;
+
+            document.getElementById('printContainer').innerHTML = `
+                <div class="card-border-box individual-report-card p-2" id="individualCardPaper" style="font-family:'Anek Kannada', 'Poppins', sans-serif;">
+                    <div class="text-center border-bottom pb-1 mb-2">
+                        <div class="report-header-title1">${t('ಸಾರ್ವಜನಿಕ ಶಿಕ್ಷಣ ಇಲಾಖೆ - ಕರ್ನಾಟಕ ಸರ್ಕಾರ', 'Department of Public Instruction - Govt of Karnataka')}</div>
+                        <div class="report-school-name my-1 fs-4">${appSettings.schoolName}</div>
+                        <div class="badge bg-danger text-white fs-8 px-3 py-1">${examTitleStr} - ${appSettings.academicYear}</div>
+                    </div>
+                    
+                    <div class="row g-1 fs-8 mb-2 bg-light p-2 rounded border text-start">
+                        <div class="col-6"><strong>${t('ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು:', 'Student Name:')}</strong> <span class="fw-bold text-primary">${st.name}</span></div>
+                        <div class="col-3"><strong>${t('ತರಗತಿ:', 'Class:')}</strong> ${st.className}</div>
+                        <div class="col-3"><strong>SATS ID:</strong> ${st.sats || '-'}</div>
+                        <div class="col-4"><strong>${t('ತಂದೆಯ ಹೆಸರು:', 'Father Name:')}</strong> ${st.father || extractFatherFromFullName(st.name) || '-'}</div>
+                        <div class="col-4"><strong>${t('ತಾಯಿಯ ಹೆಸರು:', 'Mother Name:')}</strong> ${st.mother || '-'}</div>
+                        <div class="col-4"><strong>${t('ದಾಖಲಾತಿ ಸಂಖ್ಯೆ:', 'Adm No:')}</strong> ${st.admissionNo || '-'}</div>
+                        <div class="col-4"><strong>${t('ಜನನ ದಿನಾಂಕ:', 'Date of Birth:')}</strong> ${cleanDateFormat(st.dob)}</div>
+                        <div class="col-4"><strong>${t('ಲಿಂಗ:', 'Gender:')}</strong> ${st.gender === 'Boy' ? t('ಗಂಡು', 'Male') : st.gender === 'Girl' ? t('ಹೆಣ್ಣು', 'Female') : '-'}</div>
+                        <div class="col-4"><strong>PEN ID:</strong> ${st.pen || '-'}</div>
+                        <div class="col-12 border-top pt-1 mt-1"><strong>${t('ಅಂತಿಮ ಫಲಿತಾಂಶ:', 'Final Result:')}</strong> <span class="fw-bold ${allPassed?'text-success':'text-danger'}">${finalResultText}</span></div>
+                    </div>
+
+                    <h6 class="fw-bold text-dark fs-8 border-bottom pb-1 mb-1 text-start">${t(`1. ${examFilter} ಪಠ್ಯ ವಿಷಯಗಳ ಸಾಧನೆ:`, `1. ${examFilter} Academic Performance:`)}</h6>
+                    <table class="table table-bordered text-center align-middle table-sm fs-8 mb-2">
+                        <thead class="table-dark">
+                            <tr><th style="padding: 3px 2px !important;">#</th><th style="padding: 3px 2px !important;">${t('ವಿಷಯ (Subjects)', 'Subjects')}</th><th style="padding: 3px 2px !important;">${t('ಗರಿಷ್ಠ ಅಂಕ', 'Max Marks')}</th><th style="padding: 3px 2px !important;">${t('ಪಡೆದ ಅಂಕ', 'Marks Obtained')}</th><th style="padding: 3px 2px !important;">${t('ಶ್ರೇಣಿ (Grade)', 'Grade')}</th><th style="padding: 3px 2px !important;">${t('ಫಲಿತಾಂಶ', 'Result')}</th></tr>
+                        </thead>
+                        <tbody>
+                            ${subjectsHtml}
+                            <tr class="table-warning fw-bold">
+                                <td colspan="2" class="text-end" style="padding: 3px 2px !important;">${t('ಒಟ್ಟು ಪಡೆದ ಅಂಕಗಳು (Grand Total)', 'Grand Total Marks')}</td>
+                                <td style="padding: 3px 2px !important;">${maxGrandTotal}</td>
+                                <td class="fs-7 text-primary" style="padding: 3px 2px !important;">${grandTotalObtained}</td>
+                                <td style="padding: 3px 2px !important;">${overallGrade}</td>
+                                <td class="${allPassed?'text-success':'text-danger'}" style="padding: 3px 2px !important;">${allPassed?'Pass':'Fail'}</td>
+                            </tr>
+                            <tr class="table-info fw-bold">
+                                <td colspan="2" class="text-end" style="padding: 3px 2px !important;">${t('ಶೇಕಡಾವಾರು ಪ್ರಮಾಣ (% Percentage)', 'Overall Percentage (%)')}</td>
+                                <td colspan="4" class="text-start ps-3 fs-7 text-dark" style="padding: 3px 2px !important;">${overallPerc}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h6 class="fw-bold text-dark fs-8 border-bottom pb-1 mb-1 text-start">${t('2. ಸಹಪಠ್ಯ ವಿಷಯಗಳ ಶ್ರೇಣಿಗಳು (Co-Scholastic Grades):', '2. Co-Scholastic Performance Grades:')}</h6>
+                    <table class="table table-bordered text-center align-middle table-sm fs-8 mb-2">
+                        <thead class="bg-secondary text-white">
+                            <tr><th style="padding: 3px 2px !important;">${t('ಮೌಲ್ಯ ಶಿಕ್ಷಣ', 'Value Edu')}</th><th style="padding: 3px 2px !important;">${t('ಕಾರ್ಯಾನುಭವ', 'Work Exp')}</th><th style="padding: 3px 2px !important;">${t('ಕಲಾ ಶಿಕ್ಷಣ / Drawing', 'Art Edu')}</th><th style="padding: 3px 2px !important;">${t('ದೈಹಿಕ ಶಿಕ್ಷಣ', 'PE')}</th><th style="padding: 3px 2px !important;">${t('ಹಾಜರಿದ್ದ ದಿನಗಳು', 'Days Attended')}</th><th style="padding: 3px 2px !important;">${t('ಅಂತಿಮ ಫಲಿತಾಂಶ', 'Final Result')}</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="fw-bold" style="padding: 3px 2px !important;">${co.c1||'A'}</td><td class="fw-bold" style="padding: 3px 2px !important;">${co.c2||'A'}</td><td class="fw-bold" style="padding: 3px 2px !important;">${co.c3||'A'}</td>
+                                <td class="fw-bold" style="padding: 3px 2px !important;">${co.c4||'A'}</td><td class="fw-bold text-primary" style="padding: 3px 2px !important;">${co.attDays||210}</td>
+                                <td class="fw-bold ${allPassed?'text-success':'text-danger'}" style="padding: 3px 2px !important;">${allPassed?'PASSED':'FAILED'}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="row text-center fs-8 pt-2 mt-2 align-items-end">
+                        <div class="col-4"><div class="sig-box-container" style="min-height: 60px !important; max-height: 65px !important;"><span>&nbsp;</span><div class="text-muted fs-8">${t('ಪಾಲಕರ ಸಹಿ', 'Parent Signature')}</div><strong>Parent Signature</strong></div></div>
+                        <div class="col-4"><div class="sig-box-container" style="min-height: 60px !important; max-height: 65px !important;"><div>${getCurrentClassTeacherSig(st.className, 'A') ? `<img src="${getCurrentClassTeacherSig(st.className, 'A')}" class="sig-preview mb-1">` : ''}<small class="fw-bold d-block text-dark">${ctName}</small></div><strong>${t('ವರ್ಗ ಶಿಕ್ಷಕರ ಸಹಿ', 'Class Teacher Signature')}</strong></div></div>
+                        <div class="col-4"><div class="sig-box-container" style="min-height: 60px !important; max-height: 70px !important;"><div class="d-flex flex-column align-items-center">${appSettings.hmSigUrl ? `<img src="${appSettings.hmSigUrl}" class="sig-preview mb-1">` : ''}<div class="seal-circle-placeholder"><span>School Seal</span></div><small class="fw-bold text-dark">${appSettings.hmName}</small></div><strong>${t('ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಹಿ &amp; ಮೊಹರು', 'Headmaster Signature &amp; Seal')}</strong></div></div>
+                    </div>
+                </div>`;
+        };
         
     </script>
 </body>
