@@ -13621,6 +13621,107 @@
                 document.head.appendChild(styleEl);
             }
         })();
+
+        // ----------------------------------------------------------------------
+        // ZERO DATA LOSS CLOUD & LOCAL STORAGE PROTECTION ENGINE
+        // ----------------------------------------------------------------------
+        let isCloudDataLoaded = false;
+
+        // Safe Cloud Listener with Overwrite Protection & Instant Local Cache
+        subscribeToSchoolCloudData = function(diseCode) {
+            if (!db || !diseCode || diseCode === 'ALL' || diseCode === '29010411501_DEMO') return;
+            if (firestoreUnsubscribe) firestoreUnsubscribe();
+
+            // 1. Instant Load from Local Device Cache FIRST for immediate view
+            try {
+                const localCache = localStorage.getItem(`ksrms_cache_${diseCode}`);
+                if (localCache) {
+                    const parsed = JSON.parse(localCache);
+                    if (parsed && Array.isArray(parsed.students) && parsed.students.length > 0) {
+                        sampleStudents = parsed.students;
+                        if (parsed.appSettings) appSettings = { ...appSettings, ...parsed.appSettings };
+                        if (parsed.classTeachersMap) classTeachersMap = parsed.classTeachersMap;
+                        onClassChangeHandle();
+                    }
+                }
+            } catch(e) {}
+
+            // 2. Realtime Firebase Cloud Synchronization
+            const docRef = db.collection("ksrms_schools").doc(diseCode);
+            firestoreUnsubscribe = docRef.onSnapshot((doc) => {
+                if (doc.exists) {
+                    if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.classList.contains('mark-input')) {
+                        return;
+                    }
+                    const cloudData = doc.data();
+                    
+                    // Safeguard: Only accept Cloud Data if it has students or if local is empty
+                    if (cloudData.students && Array.isArray(cloudData.students)) {
+                        if (cloudData.students.length > 0 || sampleStudents.length === 0) {
+                            sampleStudents = cloudData.students;
+                        }
+                    }
+                    if (cloudData.appSettings) appSettings = { ...appSettings, ...cloudData.appSettings };
+                    if (cloudData.classTeachersMap) classTeachersMap = cloudData.classTeachersMap;
+                    if (cloudData.subjectMasterList && Array.isArray(cloudData.subjectMasterList)) subjectMasterList = cloudData.subjectMasterList;
+
+                    isCloudDataLoaded = true;
+
+                    // Cache locally on this device so data is safe even offline
+                    try {
+                        localStorage.setItem(`ksrms_cache_${diseCode}`, JSON.stringify({
+                            students: sampleStudents,
+                            appSettings: appSettings,
+                            classTeachersMap: classTeachersMap,
+                            subjectMasterList: subjectMasterList
+                        }));
+                    } catch(e) {}
+
+                    onClassChangeHandle();
+                    renderSubjectTable();
+                } else {
+                    isCloudDataLoaded = true;
+                }
+            }, (err) => console.error("Cloud Listener Error:", err));
+        };
+
+        // Safe Cloud Push with Zero-Overwrite Safeguard
+        syncSchoolDataToCloud = async function() {
+            if (!db || !currentSession.diseCode || currentSession.diseCode === 'ALL') return;
+            if (currentSession.role !== 'school') return; // Do not push in Demo mode!
+
+            const diseCode = currentSession.diseCode;
+
+            // SAFEGUARD: Do not push empty data if cloud data hasn't finished loading yet!
+            if (!isCloudDataLoaded && sampleStudents.length === 0) {
+                console.warn("Prevented empty overwrite before cloud load complete.");
+                return;
+            }
+
+            // Always update Local Cache FIRST for immediate safety
+            try {
+                localStorage.setItem(`ksrms_cache_${diseCode}`, JSON.stringify({
+                    students: sampleStudents,
+                    appSettings: appSettings,
+                    classTeachersMap: classTeachersMap,
+                    subjectMasterList: subjectMasterList
+                }));
+            } catch(e) {}
+
+            // Push to Firebase Firestore Cloud
+            try {
+                await db.collection("ksrms_schools").doc(diseCode).set({
+                    appSettings: appSettings,
+                    classTeachersMap: classTeachersMap,
+                    students: sampleStudents,
+                    subjectMasterList: subjectMasterList,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log(`Cloud sync success for DISE ${diseCode}. Total students: ${sampleStudents.length}`);
+            } catch(e) {
+                console.error("Cloud Save Error:", e);
+            }
+        };
         
     </script>
 </body>
