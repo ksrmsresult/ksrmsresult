@@ -16808,7 +16808,174 @@
 
             if (container) container.scrollIntoView({ behavior: 'smooth' });
         };
-        
+
+        // ----------------------------------------------------------------------
+        // PERMANENT ZERO DATA LOSS & AUTOMATIC DUAL-STORAGE BACKUP ENGINE
+        // ----------------------------------------------------------------------
+
+        // 1. Permanent Session Persistence (Stays logged in even after browser restart)
+        loadSavedSession = function() {
+            try {
+                const savedSession = localStorage.getItem('ksrms_active_session'); // Switched to permanent localStorage
+                if (savedSession) {
+                    const parsed = JSON.parse(savedSession);
+                    if (parsed && parsed.role) {
+                        currentSession = parsed;
+                    }
+                }
+            } catch(e) {
+                console.error("Error loading session:", e);
+            }
+        };
+
+        saveCurrentSession = function() {
+            try {
+                localStorage.setItem('ksrms_active_session', JSON.stringify(currentSession));
+            } catch(e) {}
+        };
+
+        clearCurrentSession = function() {
+            const oldDise = currentSession.diseCode;
+            currentSession = {
+                isLoggedIn: false,
+                role: 'demo',
+                diseCode: '29010411501',
+                schoolName: 'ಸರ್ಕಾರಿ ಕನ್ನಡ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ ತುಮ್ಮರಗುದ್ದಿ',
+                mobile: '9902090911'
+            };
+            try {
+                localStorage.removeItem('ksrms_active_session');
+            } catch(e) {}
+            updateSessionUI();
+            onClassChangeHandle();
+        };
+
+        // 2. Load School Data from Local Device Storage
+        function loadSchoolDataFromStorage(diseCode) {
+            if (!diseCode) return;
+            try {
+                const localData = localStorage.getItem(`ksrms_permanent_store_${diseCode}`);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    if (parsed && Array.isArray(parsed.students) && parsed.students.length > 0) {
+                        sampleStudents = parsed.students;
+                        if (parsed.appSettings) appSettings = { ...appSettings, ...parsed.appSettings };
+                        if (parsed.classTeachersMap) classTeachersMap = parsed.classTeachersMap;
+                        if (parsed.subjectMasterList) subjectMasterList = parsed.subjectMasterList;
+                        console.log(`Loaded ${sampleStudents.length} students from local device backup for ${diseCode}`);
+                    }
+                }
+            } catch(e) {
+                console.error("Local storage load error:", e);
+            }
+        }
+
+        // 3. Unified Dual-Storage Saver (Local Storage + Firebase Cloud)
+        function saveAndSyncAllData() {
+            const activeDise = (currentSession && currentSession.diseCode) ? currentSession.diseCode : '29010411501_DEMO';
+
+            // A. Always save copy to device LocalStorage FIRST (100% Instant Device Backup!)
+            try {
+                const storeObj = {
+                    students: sampleStudents,
+                    appSettings: appSettings,
+                    classTeachersMap: classTeachersMap,
+                    subjectMasterList: subjectMasterList,
+                    lastSaved: Date.now()
+                };
+                localStorage.setItem(`ksrms_permanent_store_${activeDise}`, JSON.stringify(storeObj));
+            } catch(e) {
+                console.error("LocalStorage save error:", e);
+            }
+
+            // B. Push to Firebase Cloud Firestore (if logged in as registered school)
+            if (db && currentSession && currentSession.role === 'school' && activeDise !== 'ALL') {
+                try {
+                    db.collection("ksrms_schools").doc(activeDise).set({
+                        students: sampleStudents,
+                        appSettings: appSettings,
+                        classTeachersMap: classTeachersMap,
+                        subjectMasterList: subjectMasterList,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true }).then(() => {
+                        console.log(`Cloud sync successful for ${activeDise}. Total: ${sampleStudents.length} students.`);
+                    }).catch(err => console.error("Cloud push error:", err));
+                } catch(err) {
+                    console.error("Firebase sync exception:", err);
+                }
+            }
+        }
+
+        // Replace old sync function with unified safe saver
+        syncSchoolDataToCloud = function() {
+            saveAndSyncAllData();
+        };
+
+        // 4. Safe Realtime Cloud Listener with Local Backup Restoration
+        subscribeToSchoolCloudData = function(diseCode) {
+            if (!diseCode || diseCode === 'ALL') return;
+
+            // Load local backup first so UI shows data immediately
+            loadSchoolDataFromStorage(diseCode);
+            onClassChangeHandle();
+
+            if (!db) return;
+            if (firestoreUnsubscribe) firestoreUnsubscribe();
+
+            const docRef = db.collection("ksrms_schools").doc(diseCode);
+            firestoreUnsubscribe = docRef.onSnapshot((doc) => {
+                if (doc.exists) {
+                    // Prevent focus loss while user is typing in marks grid
+                    if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.classList.contains('mark-input')) {
+                        return;
+                    }
+
+                    const cloudData = doc.data();
+
+                    // Safeguard: Only accept Cloud Data if it has students
+                    if (cloudData.students && Array.isArray(cloudData.students) && cloudData.students.length > 0) {
+                        sampleStudents = cloudData.students;
+                        if (cloudData.appSettings) appSettings = { ...appSettings, ...cloudData.appSettings };
+                        if (cloudData.classTeachersMap) classTeachersMap = cloudData.classTeachersMap;
+                        if (cloudData.subjectMasterList) subjectMasterList = cloudData.subjectMasterList;
+
+                        // Update Local Storage Permanent Backup
+                        try {
+                            localStorage.setItem(`ksrms_permanent_store_${diseCode}`, JSON.stringify({
+                                students: sampleStudents,
+                                appSettings: appSettings,
+                                classTeachersMap: classTeachersMap,
+                                subjectMasterList: subjectMasterList,
+                                lastSaved: Date.now()
+                            }));
+                        } catch(e) {}
+
+                        onClassChangeHandle();
+                        renderSubjectTable();
+                    }
+                }
+            }, (err) => console.error("Cloud Listener Error:", err));
+        };
+
+        // 5. Auto-Run Permanent Boot Restore on Page Load
+        (function initPermanentStorageBoot() {
+            function bootStorage() {
+                loadSavedSession();
+                const activeDise = (currentSession && currentSession.diseCode) ? currentSession.diseCode : '29010411501';
+                loadSchoolDataFromStorage(activeDise);
+                if (currentSession && currentSession.role === 'school') {
+                    subscribeToSchoolCloudData(activeDise);
+                } else {
+                    onClassChangeHandle();
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bootStorage);
+            } else {
+                bootStorage();
+            }
+        })();
         
     </script>
 </body>
