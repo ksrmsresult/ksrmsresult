@@ -16976,6 +16976,114 @@
                 bootStorage();
             }
         })();
+
+// ----------------------------------------------------------------------
+        // REMOVE LOGOUT BUTTON & ENFORCE PERMANENT CLOUD SYNC ACROSS ALL DEVICES
+        // ----------------------------------------------------------------------
+        (function enforcePermanentCloudSyncAndRemoveLogout() {
+            function removeLogoutUI() {
+                // 1. Permanently Hide/Remove Logout Buttons
+                const navLogoutBtn = document.getElementById('navLogoutBtn');
+                if (navLogoutBtn) navLogoutBtn.style.display = 'none';
+
+                const mobLogoutBtn = document.getElementById('mobileTopLogoutBtn');
+                if (mobLogoutBtn) mobLogoutBtn.style.display = 'none';
+
+                const mobAdminNavItem = document.getElementById('mobileAdminNavItem');
+                if (mobAdminNavItem) {
+                    mobAdminNavItem.innerHTML = `
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <button class="btn btn-warning btn-sm fw-bold text-dark shadow-sm" onclick="openLoginModal()">
+                                <i class="fa-solid fa-right-to-bracket me-1"></i> School Login
+                            </button>
+                        </div>`;
+                }
+            }
+
+            // 2. Real-Time Permanent Cloud Push for ANY Data Entry / Edit / Import
+            saveAndSyncAllData = function() {
+                const activeDise = (currentSession && currentSession.diseCode) ? currentSession.diseCode : '29010411501_DEMO';
+
+                // Local Device Storage Backup
+                try {
+                    localStorage.setItem(`ksrms_permanent_store_${activeDise}`, JSON.stringify({
+                        students: sampleStudents,
+                        appSettings: appSettings,
+                        classTeachersMap: classTeachersMap,
+                        subjectMasterList: subjectMasterList,
+                        lastSaved: Date.now()
+                    }));
+                } catch(e) {}
+
+                // Firebase Cloud Push (Works permanently across ANY Mobile / Laptop!)
+                if (db && currentSession && currentSession.role === 'school' && activeDise !== 'ALL') {
+                    try {
+                        db.collection("ksrms_schools").doc(activeDise).set({
+                            students: sampleStudents,
+                            appSettings: appSettings,
+                            classTeachersMap: classTeachersMap,
+                            subjectMasterList: subjectMasterList,
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true }).then(() => {
+                            console.log(`[PERMANENT CLOUD SAVE SUCCESS] ${sampleStudents.length} students synced to Firebase Cloud for DISE ${activeDise}`);
+                        }).catch(err => console.error("Cloud Push Error:", err));
+                    } catch(err) {
+                        console.error("Firebase Sync Error:", err);
+                    }
+                }
+            };
+
+            // 3. Instant Cloud Data Fetcher for ANY Mobile or Laptop Login
+            subscribeToSchoolCloudData = function(diseCode) {
+                if (!diseCode || diseCode === 'ALL') return;
+
+                // Load local device cache first for instant UI rendering
+                loadSchoolDataFromStorage(diseCode);
+                onClassChangeHandle();
+
+                if (!db) return;
+                if (firestoreUnsubscribe) firestoreUnsubscribe();
+
+                const docRef = db.collection("ksrms_schools").doc(diseCode);
+                firestoreUnsubscribe = docRef.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        // Prevent focus loss while typing
+                        if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.classList.contains('mark-input')) {
+                            return;
+                        }
+
+                        const cloudData = doc.data();
+
+                        if (cloudData.students && Array.isArray(cloudData.students)) {
+                            sampleStudents = cloudData.students;
+                            if (cloudData.appSettings) appSettings = { ...appSettings, ...cloudData.appSettings };
+                            if (cloudData.classTeachersMap) classTeachersMap = cloudData.classTeachersMap;
+                            if (cloudData.subjectMasterList) subjectMasterList = cloudData.subjectMasterList;
+
+                            // Save updated cloud data to local device storage
+                            try {
+                                localStorage.setItem(`ksrms_permanent_store_${diseCode}`, JSON.stringify({
+                                    students: sampleStudents,
+                                    appSettings: appSettings,
+                                    classTeachersMap: classTeachersMap,
+                                    subjectMasterList: subjectMasterList,
+                                    lastSaved: Date.now()
+                                }));
+                            } catch(e) {}
+
+                            onClassChangeHandle();
+                            renderSubjectTable();
+                        }
+                    }
+                }, (err) => console.error("Cloud Listener Error:", err));
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', removeLogoutUI);
+            } else {
+                removeLogoutUI();
+            }
+        })();
         
     </script>
 </body>
