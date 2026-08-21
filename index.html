@@ -17084,6 +17084,119 @@
                 removeLogoutUI();
             }
         })();
+
+// ----------------------------------------------------------------------
+        // SATS KARNATAKA EXCEL AUTO-IMPORT SATS ID (ENROLLMENT NO) DETECTION FIX
+        // ----------------------------------------------------------------------
+        processExcelImport = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const firstSheet = workbook.SheetNames[0];
+                    const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: "" });
+
+                    if (!jsonRows || jsonRows.length === 0) {
+                        return alert((currentLang === 'kn') ? "Excel ಫೈಲ್ನಲ್ಲಿ ಯಾವುದೇ ವಿವರಗಳಿಲ್ಲ!" : "No data found in Excel file!");
+                    }
+
+                    let addedCount = 0;
+                    let blankGenderCount = 0;
+                    const currentClass = document.getElementById('regClassSelect').value;
+
+                    const sampleRow = jsonRows[0];
+                    const headers = Object.keys(sampleRow);
+
+                    // Comprehensive SATS Karnataka Header Regex Matching
+                    let nameKey = headers.find(h => /name|student\s*name|ವಿದ್ಯಾರ್ಥಿ|ಹೆಸರು|child\s*name/i.test(h)) || '';
+                    let admKey = headers.find(h => /adm|admission|ದಾಖಲಾತಿ|sl|sr\.\s*no|sr\s*no/i.test(h)) || '';
+                    let genderKey = headers.find(h => /gender|sex|ಲಿಂಗ|boy\/girl|m\/f|child\s*gender/i.test(h)) || '';
+                    let dobKey = headers.find(h => /dob|birth|ದಿನಾಂಕ|ಜನನ|date\s*of\s*birth/i.test(h)) || '';
+                    
+                    // Matches "Enrollment No.", "SATS ID", "SATS Number", "Enrollment Number", "Child ID", etc.
+                    let satsKey = headers.find(h => /sats|enrollment|enrolment|student\s*id|child\s*id|sats\s*id/i.test(h)) || '';
+                    
+                    let penKey = headers.find(h => /pen|permanent\s*education|pen\s*no|pen\s*id/i.test(h)) || '';
+                    let catKey = headers.find(h => /category|cat|ವರ್ಗ|ಸಾಮಾಜಿಕ|social\s*category/i.test(h)) || '';
+                    let casteKey = headers.find(h => /caste|ಜಾತಿ/i.test(h)) || '';
+                    let fatherKey = headers.find(h => /father|ತಂದೆ|parent/i.test(h)) || '';
+                    let motherKey = headers.find(h => /mother|ತಾಯಿ/i.test(h)) || '';
+                    let mobileKey = headers.find(h => /mobile|phone|ಮೊಬೈಲ್|contact/i.test(h)) || '';
+
+                    jsonRows.forEach((row, idx) => {
+                        let nameVal = nameKey ? String(row[nameKey]).trim() : '';
+
+                        if (!nameVal) {
+                            const rowVals = Object.values(row).map(v => String(v).trim());
+                            nameVal = rowVals.find(v => isNaN(v) && v.length >= 2 && !v.toLowerCase().includes('standard') && !v.toLowerCase().includes('gender')) || '';
+                        }
+
+                        if (nameVal && nameVal.length >= 2 && !nameVal.toLowerCase().includes('student name') && !nameVal.toLowerCase().includes('number of students')) {
+                            let rawGender = genderKey ? row[genderKey] : '';
+                            if (!rawGender) {
+                                const rowVals = Object.values(row).map(v => String(v).trim().toLowerCase());
+                                rawGender = rowVals.find(v => ['boy','girl','male','female','m','f','ಗಂಡು','ಹೆಣ್ಣು'].includes(v)) || '';
+                            }
+
+                            const normalizedGender = normalizeGenderStrict(rawGender);
+                            if (normalizedGender === "") {
+                                blankGenderCount++;
+                            }
+
+                            // SATS ID Clean Up (Strips out extra spaces e.g. "185 151 365" -> "185151365")
+                            let rawSats = satsKey ? String(row[satsKey] || '') : '';
+                            let cleanSats = rawSats.replace(/\s+/g, '').replace(/[^0-9]/g, '').trim();
+
+                            sampleStudents.push({
+                                id: Date.now().toString() + "_" + idx,
+                                admissionNo: admKey ? String(row[admKey]).trim() : '',
+                                name: nameVal,
+                                gender: normalizedGender,
+                                dob: dobKey ? cleanDateFormat(row[dobKey]) : '',
+                                sats: cleanSats,
+                                pen: penKey ? String(row[penKey]).replace(/\s+/g, '').trim() : '',
+                                casteCat: catKey ? String(row[catKey]).trim() : 'General',
+                                casteName: casteKey ? String(row[casteName]).trim() : '',
+                                father: fatherKey ? String(row[fatherKey]).trim() : extractFatherFromFullName(nameVal),
+                                mother: motherKey ? String(row[motherKey]).trim() : '',
+                                mobile: mobileKey ? String(row[mobileKey]).trim() : '',
+                                cwsnStatus: 'No',
+                                className: currentClass,
+                                marks: {},
+                                hsMarks: {},
+                                co: { c1:'B', c2:'B', c3:'B', c4:'B', c5:'B', c6:'B', c7:'B', ict: 75, attDays: 205, res: 'ಉತ್ತೀರ್ಣ' }
+                            });
+                            addedCount++;
+                        }
+                    });
+
+                    event.target.value = '';
+                    sortStudentsAlphabetically(sampleStudents);
+                    syncSchoolDataToCloud();
+                    onClassChangeHandle();
+
+                    let msg = (currentLang === 'kn')
+                        ? `${addedCount} ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರಗಳನ್ನು (SATS ID ಸೇರಿ) ಇಂಪೋರ್ಟ್ ಮಾಡಲಾಗಿದೆ!`
+                        : `Successfully imported ${addedCount} student records (including SATS IDs)!`;
+
+                    if (blankGenderCount > 0) {
+                        msg += (currentLang === 'kn')
+                            ? `\nಗಮನಿಸಿ: ${blankGenderCount} ವಿದ್ಯಾರ್ಥಿಗಳ ಲಿಂಗ (Gender) ವಿವರ ಖಾಲಿಯಾಗಿದೆ.`
+                            : `\nNote: ${blankGenderCount} records had blank gender fields.`;
+                    }
+                    alert(msg);
+
+                } catch(err) {
+                    console.error("Excel Import Exception:", err);
+                    alert((currentLang === 'kn') ? "Excel ಫೈಲ್ ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಫಾರ್ಮ್ಯಾಟ್ ಪರಿಶೀಲಿಸಿ." : "Unable to read Excel file. Please check format.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
         
     </script>
 </body>
