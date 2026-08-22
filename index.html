@@ -17999,6 +17999,134 @@
                     </div>
                 </div>`;
         };
+
+        // ----------------------------------------------------------------------
+        // DELETE SIGNATURE & DIGITAL SIGNATURE DISPLAY TOGGLE ENGINE
+        // ----------------------------------------------------------------------
+
+        // 1. Delete HM Digital Signature
+        function deleteHMSignature() {
+            if (!checkLicensePermission("delete signature")) return;
+            if (confirm("ಖಚಿತವಾಗಿ ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಡಿಜಿಟಲ್ ಸಹಿಯನ್ನು ಅಳಿಸಬೇಕೇ?")) {
+                appSettings.hmSigUrl = '';
+                const preview = document.getElementById('hmSigPreview');
+                if (preview) {
+                    preview.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='35'><text x='10' y='22' fill='%23999' font-size='12'>HM Signature</text></svg>";
+                }
+                const fileInput = document.getElementById('cfgHMSigFile');
+                if (fileInput) fileInput.value = '';
+
+                syncSchoolDataToCloud();
+                alert("ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಡಿಜಿಟಲ್ ಸಹಿಯನ್ನು ಅಳಿಸಲಾಗಿದೆ.");
+            }
+        }
+
+        // 2. Delete Class Teacher Digital Signature
+        function deleteCTSignature() {
+            if (!checkLicensePermission("delete signature")) return;
+            const cls = document.getElementById('cfgCTClassSelect').value;
+            const sec = document.getElementById('cfgCTSectionSelect').value;
+            const key = `${cls}-${sec}`;
+
+            if (confirm(`ಖಚಿತವಾಗಿ ${cls} (${sec}) ವರ್ಗ ಶಿಕ್ಷಕರ ಡಿಜಿಟಲ್ ಸಹಿಯನ್ನು ಅಳಿಸಬೇಕೇ?`)) {
+                if (classTeachersMap[key]) {
+                    classTeachersMap[key].sigUrl = '';
+                }
+                const preview = document.getElementById('ctSigPreview');
+                if (preview) {
+                    preview.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='35'><text x='10' y='22' fill='%23999' font-size='12'>Teacher Signature</text></svg>";
+                }
+                const fileInput = document.getElementById('cfgCTSigFile');
+                if (fileInput) fileInput.value = '';
+
+                syncSchoolDataToCloud();
+                alert(`${cls} ವರ್ಗ ಶಿಕ್ಷಕರ ಡಿಜಿಟಲ್ ಸಹಿಯನ್ನು ಅಳಿಸಲಾಗಿದೆ.`);
+            }
+        }
+
+        // 3. Auto-Inject Signature Control UI inside Settings Section
+        (function injectSignatureControlsInSettings() {
+            function setupUI() {
+                // HM Signature Delete Button
+                const hmImg = document.getElementById('hmSigPreview');
+                if (hmImg && !document.getElementById('btnDelHMSig')) {
+                    const parent = hmImg.parentNode;
+                    const delBtn = document.createElement('button');
+                    delBtn.id = 'btnDelHMSig';
+                    delBtn.type = 'button';
+                    delBtn.className = 'btn btn-xs btn-outline-danger fw-bold ms-2';
+                    delBtn.onclick = deleteHMSignature;
+                    delBtn.innerHTML = `<i class="fa-solid fa-trash-can me-1"></i> HM ಸಹಿ ಅಳಿಸಿ`;
+                    parent.appendChild(delBtn);
+                }
+
+                // Class Teacher Signature Delete Button
+                const ctImg = document.getElementById('ctSigPreview');
+                if (ctImg && !document.getElementById('btnDelCTSig')) {
+                    const parent = ctImg.parentNode;
+                    const delBtn = document.createElement('button');
+                    delBtn.id = 'btnDelCTSig';
+                    delBtn.type = 'button';
+                    delBtn.className = 'btn btn-xs btn-outline-danger fw-bold ms-2';
+                    delBtn.onclick = deleteCTSignature;
+                    delBtn.innerHTML = `<i class="fa-solid fa-trash-can me-1"></i> Teacher ಸಹಿ ಅಳಿಸಿ`;
+                    parent.appendChild(delBtn);
+                }
+
+                // Digital Signature Display Toggle Option
+                const settingsContainer = document.querySelector('#settingsSection .card-body .row');
+                if (settingsContainer && !document.getElementById('cfgShowDigitalSigsContainer')) {
+                    const toggleDiv = document.createElement('div');
+                    toggleDiv.id = 'cfgShowDigitalSigsContainer';
+                    toggleDiv.className = 'col-md-12 bg-light p-3 border rounded mb-3';
+                    toggleDiv.innerHTML = `
+                        <label class="form-label fw-bold text-primary mb-1">
+                            <i class="fa-solid fa-signature me-1"></i> ಪ್ರಗತಿ ಪತ್ರದಲ್ಲಿ ಡಿಜಿಟಲ್ ಸಹಿ ಪ್ರದರ್ಶಿಸಬೇಕೇ? (Digital Signature Display):
+                        </label>
+                        <select class="form-select border-primary fw-bold" id="cfgShowDigitalSigs" onchange="saveSchoolSettings()">
+                            <option value="Yes" ${appSettings.showDigitalSigs !== 'No' ? 'selected' : ''}>Yes - ಡಿಜಿಟಲ್ ಸಹಿ ತೋರಿಸಿ (Show Digital Signature Image)</option>
+                            <option value="No" ${appSettings.showDigitalSigs === 'No' ? 'selected' : ''}>No - ಖಾಲಿ ಬಾಕ್ಸ್ (Hide Digital Sig - Manual Pen Sign)</option>
+                        </select>
+                        <small class="text-muted d-block mt-1">'No' ಆಯ್ಕೆ ಮಾಡಿದರೆ ಪ್ರಗತಿ ಪತ್ರದಲ್ಲಿ ಡಿಜಿಟಲ್ ಸಹಿ ಹೈಡ್ ಆಗಿ ಖಾಲಿ ಬಾಕ್ಸ್ ಬರುತ್ತದೆ (ಪೆನ್ನಿನಿಂದ ನೇರ ಸಹಿ ಮಾಡಲು ಅನುಕೂಲವಾಗುತ್ತದೆ).</small>
+                    `;
+                    settingsContainer.insertBefore(toggleDiv, settingsContainer.firstChild);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupUI);
+            } else {
+                setupUI();
+            }
+        })();
+
+        // Primary Progress Card Signature Toggle Sync Override
+        const _baseSigIndReportFunc = renderIndividualReport;
+        renderIndividualReport = function() {
+            if (typeof _baseSigIndReportFunc === 'function') {
+                _baseSigIndReportFunc();
+            }
+
+            const showSigs = (appSettings.showDigitalSigs !== 'No');
+            if (!showSigs) {
+                const sigImgs = document.querySelectorAll('#individualCardPaper .sig-preview');
+                sigImgs.forEach(img => img.style.display = 'none');
+            }
+        };
+
+        // High School Progress Card Signature Toggle Sync Override
+        const _baseSigHSReportFunc = renderHighSchoolIndividualProgressCard;
+        renderHighSchoolIndividualProgressCard = function(st) {
+            if (typeof _baseSigHSReportFunc === 'function') {
+                _baseSigHSReportFunc(st);
+            }
+
+            const showSigs = (appSettings.showDigitalSigs !== 'No');
+            if (!showSigs) {
+                const sigImgs = document.querySelectorAll('#individualCardPaper .sig-preview');
+                sigImgs.forEach(img => img.style.display = 'none');
+            }
+        };
         
     </script>
 </body>
