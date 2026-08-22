@@ -17197,6 +17197,105 @@
             };
             reader.readAsArrayBuffer(file);
         };
+
+// ----------------------------------------------------------------------
+        // MASTER ADMIN SESSION EXIT & INSTANT SCHOOL LOGIN SWITCH FIX
+        // ----------------------------------------------------------------------
+
+        // Override School Login to ALWAYS overwrite and replace active Admin session!
+        performSchoolLogin = async function() {
+            const dise = document.getElementById('loginDiseCode').value.trim();
+            const rawKey = document.getElementById('loginSecretKey').value.trim();
+
+            if (!dise || !rawKey) return alert('ದಯವಿಟ್ಟು ಶಾಲೆಯ DISE Code ಮತ್ತು Secret Key ಎರಡನ್ನೂ ನಮೂದಿಸಿ!');
+
+            let foundRecord = null;
+
+            if (db) {
+                try {
+                    const docSnap = await db.collection("ksrms_licenses").doc(dise).get();
+                    if (docSnap.exists) {
+                        foundRecord = docSnap.data();
+                    }
+                } catch(err) {
+                    console.warn("Cloud check error:", err);
+                }
+            }
+
+            if (!foundRecord) {
+                const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+                foundRecord = dbKeys.find(k => String(k.diseCode).trim() === dise);
+            }
+
+            if (!foundRecord) {
+                return alert(`DISE Code (${dise}) ಗೆ ಯಾವುದೇ ನೋಂದಾಯಿತ Secret Key ದೊರೆತಿಲ್ಲ.\n\nದಯವಿಟ್ಟು Secret Key ಪರಿಶೀಲಿಸಿ ಅಥವಾ ನವೀಕರಿಸಿ.`);
+            }
+
+            const inputKeyNorm = normalizeKeyStr(rawKey);
+            const storedKeyNorm = normalizeKeyStr(foundRecord.secretKey);
+
+            if (inputKeyNorm !== storedKeyNorm && !storedKeyNorm.endsWith(inputKeyNorm)) {
+                return alert('Secret Key ಸರಿಯಾಗಿಲ್ಲ! ದಯವಿಟ್ಟು ಕಳುಹಿಸಲಾದ Secret Key ಅನ್ನು ಸರಿಯಾಗಿ ನಮೂದಿಸಿ.');
+            }
+
+            const expiresAt = foundRecord.expiresAt ? (typeof foundRecord.expiresAt === 'number' ? foundRecord.expiresAt : (foundRecord.expiresAt.toMillis ? foundRecord.expiresAt.toMillis() : Date.now() + 365*24*60*60*1000)) : Date.now() + 365*24*60*60*1000;
+
+            if (Date.now() > expiresAt) {
+                return alert('ಈ ಶಾಲೆಯ Secret Key ಅವಧಿ ಮುಗಿದಿದೆ (Expired)!');
+            }
+
+            // CLEAR OLD ADMIN SESSION & SET NEW SCHOOL SESSION!
+            currentSession = {
+                isLoggedIn: true,
+                role: 'school',
+                diseCode: foundRecord.diseCode,
+                schoolName: foundRecord.schoolName,
+                mobile: foundRecord.mobile
+            };
+            saveCurrentSession();
+
+            appSettings.diseCode = foundRecord.diseCode;
+            appSettings.schoolName = foundRecord.schoolName;
+            document.getElementById('cfgDiseCode').value = foundRecord.diseCode;
+            document.getElementById('cfgSchoolName').value = foundRecord.schoolName;
+
+            loginModalInstance.hide();
+            updateSessionUI();
+            subscribeToSchoolCloudData(foundRecord.diseCode);
+            alert(`ಶಾಲಾ ಲಾಗಿನ್ ಯಶಸ್ವಿಯಾಗಿದೆ!\n\nಶಾಲೆ: ${foundRecord.schoolName}\nDISE: ${foundRecord.diseCode}`);
+        };
+
+        // Exit Master Admin & Switch to School Mode Function
+        function exitAdminAndSwitchToSchool() {
+            if (confirm('Master Admin ಲಾಗಿನ್‌ನಿಂದ ನಿರ್ಗಮಿಸಿ ಶಾಲಾ ಲಾಗಿನ್‌ಗೆ ಬದಲಾಯಿಸಬೇಕೇ?')) {
+                clearCurrentSession();
+                if (adminPanelModalInstance) adminPanelModalInstance.hide();
+                openLoginModal();
+            }
+        }
+
+        // Auto-Inject "Exit Admin & Switch to School Login" Button inside Admin Panel Modal
+        (function injectExitAdminButton() {
+            function addExitBtn() {
+                const adminModalHeader = document.querySelector('#adminPanelModal .modal-header');
+                if (adminModalHeader && !document.getElementById('btnExitAdminMode')) {
+                    const exitBtn = document.createElement('button');
+                    exitBtn.id = 'btnExitAdminMode';
+                    exitBtn.className = 'btn btn-warning btn-sm fw-bold me-2 shadow-sm';
+                    exitBtn.onclick = exitAdminAndSwitchToSchool;
+                    exitBtn.innerHTML = `<i class="fa-solid fa-right-from-bracket me-1"></i> ಶಾಲಾ ಲಾಗಿನ್‌ಗೆ ಬದಲಾಯಿಸಿ`;
+                    
+                    const closeBtn = adminModalHeader.querySelector('.btn-close');
+                    adminModalHeader.insertBefore(exitBtn, closeBtn);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', addExitBtn);
+            } else {
+                addExitBtn();
+            }
+        })();
         
     </script>
 </body>
