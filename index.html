@@ -17296,6 +17296,195 @@
                 addExitBtn();
             }
         })();
+
+// ----------------------------------------------------------------------
+        // ANTI-HACK SECURITY & ACTIVE SCHOOL USAGE TRACKER FOR ADMIN PANEL
+        // ----------------------------------------------------------------------
+        let loginFailAttempts = 0;
+        let loginLockoutTime = 0;
+
+        // Anti-Brute Force School Login Overrider
+        performSchoolLogin = async function() {
+            if (Date.now() < loginLockoutTime) {
+                const waitSec = Math.ceil((loginLockoutTime - Date.now()) / 1000);
+                return alert(`ಸುರಕ್ಷತೆಯ ದೃಷ್ಟಿಯಿಂದ ಲಾಗಿನ್ ಲಾಕ್ ಆಗಿದೆ. ದಯವಿಟ್ಟು ${waitSec} ಸೆಕೆಂಡುಗಳ ನಂತರ ಪ್ರಯತ್ನಿಸಿ.`);
+            }
+
+            const dise = document.getElementById('loginDiseCode').value.trim();
+            const rawKey = document.getElementById('loginSecretKey').value.trim();
+
+            if (!dise || !rawKey) return alert('ದಯವಿಟ್ಟು ಶಾಲೆಯ DISE Code ಮತ್ತು Secret Key ಎರಡನ್ನೂ ನಮೂದಿಸಿ!');
+
+            let foundRecord = null;
+
+            if (db) {
+                try {
+                    const docSnap = await db.collection("ksrms_licenses").doc(dise).get();
+                    if (docSnap.exists) foundRecord = docSnap.data();
+                } catch(err) {}
+            }
+
+            if (!foundRecord) {
+                const dbKeys = JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+                foundRecord = dbKeys.find(k => String(k.diseCode).trim() === dise);
+            }
+
+            if (!foundRecord) {
+                loginFailAttempts++;
+                if (loginFailAttempts >= 5) loginLockoutTime = Date.now() + (5 * 60 * 1000); // 5 Mins Security Lock
+                return alert(`DISE Code (${dise}) ಗೆ ಯಾವುದೇ ನೋಂದಾಯಿತ Secret Key ದೊರೆತಿಲ್ಲ. ದಯವಿಟ್ಟು ಲೈಸೆನ್ಸ್ ಖರೀದಿಸಿ.`);
+            }
+
+            const inputKeyNorm = normalizeKeyStr(rawKey);
+            const storedKeyNorm = normalizeKeyStr(foundRecord.secretKey);
+
+            if (inputKeyNorm !== storedKeyNorm && !storedKeyNorm.endsWith(inputKeyNorm)) {
+                loginFailAttempts++;
+                if (loginFailAttempts >= 5) loginLockoutTime = Date.now() + (5 * 60 * 1000);
+                return alert('Secret Key ಸರಿಯಾಗಿಲ್ಲ!');
+            }
+
+            const expiresAt = foundRecord.expiresAt ? (typeof foundRecord.expiresAt === 'number' ? foundRecord.expiresAt : (foundRecord.expiresAt.toMillis ? foundRecord.expiresAt.toMillis() : Date.now() + 365*24*60*60*1000)) : Date.now() + 365*24*60*60*1000;
+
+            // STRICT 1 YEAR EXPIRY ENFORCEMENT
+            if (Date.now() > expiresAt) {
+                alert('ನಿಮ್ಮ ಶಾಲೆಯ Secret Key 1 ವರ್ಷದ ಅವಧಿ ಮುಗಿದಿದೆ (Expired)!\n\nದಯವಿಟ್ಟು ₹500 ಪಾವತಿಸಿ ಲೈಸೆನ್ಸ್ ನವೀಕರಿಸಿ (Renew).');
+                loginModalInstance.hide();
+                openPurchaseModal();
+                return;
+            }
+
+            loginFailAttempts = 0; // Reset counter on success
+
+            currentSession = {
+                isLoggedIn: true,
+                role: 'school',
+                diseCode: foundRecord.diseCode,
+                schoolName: foundRecord.schoolName,
+                mobile: foundRecord.mobile
+            };
+            saveCurrentSession();
+
+            appSettings.diseCode = foundRecord.diseCode;
+            appSettings.schoolName = foundRecord.schoolName;
+            document.getElementById('cfgDiseCode').value = foundRecord.diseCode;
+            document.getElementById('cfgSchoolName').value = foundRecord.schoolName;
+
+            loginModalInstance.hide();
+            updateSessionUI();
+            subscribeToSchoolCloudData(foundRecord.diseCode);
+            alert(`ಶಾಲಾ ಲಾಗಿನ್ ಯಶಸ್ವಿಯಾಗಿದೆ!\n\nಶಾಲೆ: ${foundRecord.schoolName}\nDISE: ${foundRecord.diseCode}`);
+        };
+
+        // Enhanced Cloud Sync with Usage Analytics Counter
+        saveAndSyncAllData = function() {
+            const activeDise = (currentSession && currentSession.diseCode) ? currentSession.diseCode : '29010411501_DEMO';
+
+            try {
+                localStorage.setItem(`ksrms_permanent_store_${activeDise}`, JSON.stringify({
+                    students: sampleStudents,
+                    appSettings: appSettings,
+                    classTeachersMap: classTeachersMap,
+                    subjectMasterList: subjectMasterList,
+                    lastSaved: Date.now()
+                }));
+            } catch(e) {}
+
+            if (db && currentSession && currentSession.role === 'school' && activeDise !== 'ALL') {
+                try {
+                    db.collection("ksrms_schools").doc(activeDise).set({
+                        students: sampleStudents,
+                        appSettings: appSettings,
+                        classTeachersMap: classTeachersMap,
+                        subjectMasterList: subjectMasterList,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                        studentCount: sampleStudents.length
+                    }, { merge: true });
+
+                    db.collection("ksrms_licenses").doc(activeDise).set({
+                        studentCount: sampleStudents.length,
+                        lastActiveAt: Date.now()
+                    }, { merge: true });
+                } catch(err) {
+                    console.error("Firebase Sync Error:", err);
+                }
+            }
+        };
+
+        // Admin Control Panel Table with Realtime School Usage Status
+        filterAdminKeysTable = function() {
+            const query = (document.getElementById('adminSearchKeyInput')?.value || '').trim().toLowerCase();
+            const dbKeys = window.allAdminCloudKeys || JSON.parse(localStorage.getItem('ksrms_keys_db') || '[]');
+            const tbody = document.getElementById('adminKeysTableBody');
+            if (!tbody) return;
+
+            const filtered = dbKeys.filter(k => 
+                String(k.diseCode || '').toLowerCase().includes(query) ||
+                String(k.schoolName || '').toLowerCase().includes(query) ||
+                String(k.mobile || '').toLowerCase().includes(query) ||
+                String(k.secretKey || '').toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-muted p-3">ಯಾವುದೇ ಶಾಲೆ ದೊರೆಯಲಿಲ್ಲ.</td></tr>`;
+                return;
+            }
+
+            // Table Header with Usage Tracker Column
+            const table = tbody.closest('table');
+            if (table) {
+                const thead = table.querySelector('thead');
+                if (thead) {
+                    thead.innerHTML = `
+                        <tr class="table-dark text-center fs-8">
+                            <th>DISE Code</th>
+                            <th>School Name</th>
+                            <th>Mobile</th>
+                            <th>Secret Key</th>
+                            <th>Students</th>
+                            <th>Usage Status</th>
+                            <th>Expires On</th>
+                            <th>Actions</th>
+                        </tr>`;
+                }
+            }
+
+            tbody.innerHTML = filtered.map(k => {
+                const expTime = k.expiresAt ? (typeof k.expiresAt === 'number' ? k.expiresAt : (k.expiresAt.toMillis ? k.expiresAt.toMillis() : Date.now())) : Date.now();
+                const isActive = Date.now() < expTime;
+                const stCount = k.studentCount !== undefined ? k.studentCount : 0;
+                const isUsing = stCount > 0;
+
+                return `
+                    <tr>
+                        <td class="fw-bold text-primary">${k.diseCode}</td>
+                        <td class="text-start ps-2 fw-semibold">${k.schoolName}</td>
+                        <td>${k.mobile || '-'}</td>
+                        <td class="fw-bold text-danger fs-7">${k.secretKey}</td>
+                        <td class="fw-bold fs-7 ${isUsing ? 'text-success' : 'text-muted'}">${stCount} ${t('ಮಕ್ಕಳು', 'Students')}</td>
+                        <td>
+                            <span class="badge ${isUsing ? 'bg-success' : 'bg-secondary'} px-2 py-1">
+                                ${isUsing ? '🟢 USING' : '⚪ UNUSED'}
+                            </span>
+                        </td>
+                        <td>${new Date(expTime).toLocaleDateString('en-GB')}</td>
+                        <td>
+                            <button class="btn btn-xs btn-primary fw-bold py-0 px-2 me-1" onclick="renewSchoolLicense('${k.diseCode}')" title="1 ವರ್ಷಕ್ಕೆ Renew ಮಾಡಿ">
+                                <i class="fa-solid fa-rotate"></i>
+                            </button>
+                            <button class="btn btn-xs btn-success fw-bold py-0 px-2 me-1" onclick="sendKeyToSchoolWhatsApp('${k.diseCode}', '${k.schoolName}', '${k.secretKey}', '${k.mobile}')" title="WhatsApp ಗೆ Secret Key ಕಳುಹಿಸಿ">
+                                <i class="fa-brands fa-whatsapp"></i>
+                            </button>
+                            <button class="btn btn-xs btn-outline-warning text-dark fw-bold py-0 px-2 me-1" onclick="changeSchoolMobile('${k.diseCode}')" title="Edit Mobile">
+                                <i class="fa-solid fa-mobile-screen"></i>
+                            </button>
+                            <button class="btn btn-xs btn-outline-danger fw-bold py-0 px-1" onclick="deleteSchoolByAdmin('${k.diseCode}')" title="Delete School">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            }).join('');
+        };
         
     </script>
 </body>
